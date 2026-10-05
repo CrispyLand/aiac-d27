@@ -178,6 +178,8 @@ public class ChatController {
             ragResult = ragSearcher.search(form.userInput(), recentContext, ragConfig);
             if (!ragResult.isEmpty()) {
                 effectiveInput = buildRagPrompt(ragResult.finalChunks(), form.userInput());
+            } else {
+                effectiveInput = buildRagEmptyPrompt(form.userInput());
             }
         }
         model.addAttribute("ragEnabled", ragState.isEnabled());
@@ -485,14 +487,54 @@ public class ChatController {
     private String buildRagPrompt(List<ScoredChunk> sources, String question) {
         StringBuilder sb = new StringBuilder();
         sb.append("Relevant context retrieved from the codebase:\n\n");
-        for (ScoredChunk sc : sources) {
-            Chunk c = sc.chunk();
-            sb.append("--- [").append(c.sourceFile()).append(" | ").append(c.section()).append("] ---\n");
+        for (int i = 0; i < sources.size(); i++) {
+            Chunk c = sources.get(i).chunk();
+            sb.append("--- [").append(i + 1).append("] ")
+              .append(c.sourceFile()).append(" | ").append(c.section())
+              .append(" (").append(c.chunkId()).append(") ---\n");
             sb.append(c.text()).append("\n\n");
         }
-        sb.append("---\n\nUser question: ").append(question);
+        sb.append("---\n\n");
+        sb.append("User question: ").append(question).append("\n\n");
+        sb.append(RAG_FORMAT_INSTRUCTION);
         return sb.toString();
     }
+
+    private String buildRagEmptyPrompt(String question) {
+        return "No relevant context was found in the codebase for this question.\n\n"
+                + "User question: " + question + "\n\n"
+                + "IMPORTANT: You MUST respond with:\n\n"
+                + "### Answer\n"
+                + "I don't have enough information in the retrieved context to answer this question. "
+                + "Could you rephrase or ask something more specific?\n\n"
+                + "### Sources\n(none)\n\n### Quotes\n(none)";
+    }
+
+    private static final String RAG_FORMAT_INSTRUCTION = """
+            IMPORTANT: Structure your response with these EXACT headings:
+
+            ### Answer
+            Your concise answer. Use citation markers like [1], [2] to reference sources.
+
+            ### Sources
+            List each source you used, one per line:
+            - FileName.java | section name (chunk-id)
+
+            ### Quotes
+            For each key claim, include a verbatim quote from the context above:
+            > "exact words from the context" — FileName.java
+
+            Rules:
+            - Only cite sources from the provided context above. Do not invent sources.
+            - Only quote text that appears word-for-word in the context. Do not paraphrase.
+            - If the context does not contain enough information, say so in the Answer section \
+            and write (none) for Sources and Quotes.
+            - If the question is ambiguous or too vague (e.g. "the store" could refer to multiple \
+            things), ask the user to clarify what they mean rather than guessing. List what the \
+            term could refer to if the context shows multiple matches.
+            - If the question is general knowledge (not specific to the codebase), answer from \
+            your own knowledge and write (none) for Sources and Quotes.
+            """;
 
     /** One text box, comma-separated — a term per line would be a second way to say the same thing. */
     static List<String> terms(String watch) {

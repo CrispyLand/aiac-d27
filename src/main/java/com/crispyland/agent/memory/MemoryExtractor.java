@@ -96,6 +96,15 @@ public class MemoryExtractor {
             dates, versions, identifiers and stated preferences. Ignore greetings, questions, \
             politeness and anything that is merely being discussed rather than established.
 
+            Reserved task keys — use these EXACT key names when the content fits:
+            - task/goal — the overall objective the user stated for this conversation or task
+            - task/clarification — something the user clarified after being asked, or a refinement \
+            of the goal that narrows it down
+            - task/constraint — a hard requirement or limitation the user stated that must remain \
+            fixed throughout the conversation
+            These route through the normal `task` tag. Use them alongside regular task/* keys, \
+            not instead of them.
+
             When a line could carry two tags, pick the shorter-lived one. Something the user is \
             leaning towards, weighing up or has not committed to is `task`, not `decision`; \
             anything that only matters until this job is done is `task`, not `knowledge`. How \

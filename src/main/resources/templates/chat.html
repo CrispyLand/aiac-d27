@@ -5,12 +5,12 @@
     <title>Agent Chat</title>
     <style>
         :root {
-            --bg: #f6f7f9;
-            --card: #ffffff;
-            --line: #e2e5ea;
-            --ink: #1c1f24;
-            --muted: #6b7280;
-            --accent: #3b5bdb;
+            --bg: #0f172a;
+            --card: #1e293b;
+            --line: #334155;
+            --ink: #e2e8f0;
+            --muted: #94a3b8;
+            --accent: #3b82f6;
         }
         * { box-sizing: border-box; }
         body {
@@ -34,8 +34,9 @@
                 text-transform: uppercase; letter-spacing: .04em; margin-bottom: 6px; }
         textarea, input, select {
             width: 100%; padding: 9px 11px; font: inherit; color: var(--ink);
-            background: #fff; border: 1px solid var(--line); border-radius: 7px;
+            background: #0f172a; border: 1px solid var(--line); border-radius: 7px;
         }
+        select option { background: #1e293b; color: var(--ink); }
         textarea { resize: vertical; }
         input[type=range] { padding: 0; }
         .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
@@ -48,13 +49,13 @@
         button:hover { background: #364fc7; }
         details summary { cursor: pointer; font-size: 13px; font-weight: 600; color: var(--muted); }
         details[open] summary { margin-bottom: 16px; }
-        .error { border-left: 3px solid #e03131; background: #fff5f5; color: #a12a2a; }
+        .error { border-left: 3px solid #ef4444; background: #450a0a; color: #fca5a5; }
         .usage { display: flex; flex-wrap: wrap; gap: 10px; }
         .pill {
             border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px;
-            font-size: 12px; color: var(--muted); background: #fbfbfc;
+            font-size: 12px; color: var(--muted); background: #162032;
         }
-        .pill b { color: var(--ink); font-variant-numeric: tabular-nums; }
+        .pill b { color: #f8fafc; font-variant-numeric: tabular-nums; }
         .meta { font-size: 12px; color: var(--muted); margin-top: 10px; }
         h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em;
              color: var(--muted); margin: 0 0 10px; }
@@ -68,44 +69,99 @@
             border-bottom: 1px solid var(--line);
         }
         .stream::-webkit-scrollbar { width: 10px; }
-        .stream::-webkit-scrollbar-track { background: #f1f3f5; border-radius: 5px; }
-        .stream::-webkit-scrollbar-thumb { background: #c4cad3; border-radius: 5px; }
-        .stream::-webkit-scrollbar-thumb:hover { background: #aab2bd; }
+        .stream::-webkit-scrollbar-track { background: #1e293b; border-radius: 5px; }
+        .stream::-webkit-scrollbar-thumb { background: #475569; border-radius: 5px; }
+        .stream::-webkit-scrollbar-thumb:hover { background: #64748b; }
         .turn { padding: 12px 14px; border-radius: 9px; margin-bottom: 10px; }
-        .turn.user { background: #eef1fb; border: 1px solid #d8e0f7; }
-        .turn.assistant { background: #f7f8fa; border: 1px solid var(--line); }
+        .turn.user { background: #1e3a5f; border: 1px solid #2563eb44; }
+        .turn.assistant { background: #1e293b; border: 1px solid var(--line); }
         .turnhead { display: flex; align-items: baseline; justify-content: space-between;
                     gap: 12px; margin-bottom: 6px; }
         .who { font-size: 11px; font-weight: 700; text-transform: uppercase;
                letter-spacing: .05em; color: var(--muted); }
         .mstats { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums;
                   text-align: right; }
-        .mstats b { color: #40454d; }
+        .mstats b { color: #cbd5e1; }
         /* Which tools the answer needed. Teal and monospace to match the MCP panel above and the
            tool segment of the context bar — three views of the same thing, so they read alike. */
         .used {
             font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-            font-size: 10px; font-weight: 600; color: #0b7285;
-            border: 1px solid #63e6be; background: #e6fcf5;
+            font-size: 10px; font-weight: 600; color: #2dd4bf;
+            border: 1px solid #0d9488; background: #134e4a;
             border-radius: 999px; padding: 1px 7px; margin-left: 4px;
             white-space: nowrap;
         }
-        /* A lookup that broke still gets a badge — the answer was written around a hole, which is
-           the case where saying nothing would be most misleading. */
-        .used.broke { color: #c92a2a; border-color: #ffc9c9; background: #fff5f5; }
+        .used.broke { color: #fca5a5; border-color: #991b1b; background: #450a0a; }
         .body { white-space: pre-wrap; }
+
+        /* --- Day 24: Structured RAG answer rendering --- */
+        .rag-answer { white-space: normal; line-height: 1.6; }
+        .rag-answer .rag-section-title {
+            font-weight: 700; font-size: 14px; color: #f8fafc;
+            margin: 12px 0 4px; padding-bottom: 2px;
+            border-bottom: 1px solid #334155;
+        }
+        .rag-answer .rag-section-title:first-child { margin-top: 0; }
+        .rag-answer .rag-answer-body { margin: 4px 0 8px; white-space: pre-wrap; }
+        .rag-answer .rag-cite {
+            display: inline-block; background: #1e3a5f; color: #93c5fd;
+            font-size: 11px; font-weight: 700; padding: 0 4px;
+            border-radius: 4px; vertical-align: super; margin: 0 1px;
+            cursor: default;
+        }
+        .rag-answer .rag-sources { list-style: none; padding: 0; margin: 4px 0 8px; }
+        .rag-answer .rag-sources li {
+            font-size: 13px; color: #94a3b8; padding: 3px 0;
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        }
+        .rag-answer .rag-sources .src-idx {
+            display: inline-block; width: 20px; text-align: center;
+            background: #1e3a5f; color: #93c5fd; border-radius: 3px;
+            font-size: 11px; font-weight: 700; margin-right: 4px;
+        }
+        .rag-answer .rag-sources .src-file { color: #93c5fd; font-weight: 600; }
+        .rag-answer .rag-sources .src-section { color: #64748b; }
+        .rag-answer .rag-sources .src-chunk { color: #475569; font-size: 11px; }
+        .rag-answer .rag-quote {
+            border-left: 3px solid #6366f1; background: #1e1b4b;
+            padding: 6px 10px; margin: 6px 0; border-radius: 0 6px 6px 0;
+            font-size: 13px; color: #a5b4fc; font-style: italic;
+        }
+        .rag-answer .rag-quote .quote-src { font-style: normal; color: #64748b; font-size: 11px; margin-left: 6px; }
+        .rag-answer .rag-quote-status {
+            display: inline-block; font-size: 10px; font-weight: 700;
+            padding: 1px 6px; border-radius: 3px; margin-left: 6px;
+            vertical-align: middle; font-style: normal;
+        }
+        .rag-answer .rag-quote-status.verified { background: #166534; color: #bbf7d0; }
+        .rag-answer .rag-quote-status.rejected { background: #991b1b; color: #fecaca; }
+        .rag-answer .rag-quote-status.unverified { background: #854d0e; color: #fef08a; }
+        .rag-answer .rag-insufficient {
+            background: #422006; border: 1px solid #92400e; border-radius: 8px;
+            padding: 12px 14px; color: #fde68a; font-size: 13px;
+        }
+        .rag-answer .rag-insufficient strong { color: #fbbf24; }
         /* The compressed head of the dialogue — sits where the messages it replaced used to be. */
-        .turn.summary { background: #e9fbf3; border: 1px dashed #63d3a6; }
-        .turn.summary .who { color: #0b7a5b; }
+        .turn.summary { background: #0d3326; border: 1px dashed #10b981; }
+        .turn.summary .who { color: #6ee7b7; }
         /* The key/value block — pinned above the stream, replacing nothing and outranking everything. */
-        .turn.facts { background: #fbf0fe; border: 1px dashed #d0a5e8; }
-        .turn.facts .who { color: #862e9c; }
+        .turn.facts { background: #2e1065; border: 1px dashed #8b5cf6; }
+        .turn.facts .who { color: #c4b5fd; }
         .facttable { width: 100%; border-collapse: collapse; font-size: 13px; }
-        .facttable td { padding: 4px 0; border-bottom: 1px solid #f0dcfa; vertical-align: top; }
+        .facttable td { padding: 4px 0; border-bottom: 1px solid #3b0764; vertical-align: top; }
         .facttable tr:last-child td { border-bottom: 0; }
-        .facttable td:first-child { width: 30%; color: #862e9c; font-weight: 600;
+        .facttable td:first-child { width: 30%; color: #c4b5fd; font-weight: 600;
                                     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
                                     font-size: 12px; padding-right: 12px; }
+        /* Day 25: task memory badges for reserved keys */
+        .task-badge {
+            display: inline-block; font-size: 9px; font-weight: 700;
+            padding: 1px 5px; border-radius: 3px; margin-left: 6px;
+            text-transform: uppercase; letter-spacing: 0.04em; vertical-align: middle;
+        }
+        .task-badge.tb-goal { background: #1e3a5f; color: #60a5fa; border: 1px solid #3b82f6; }
+        .task-badge.tb-clarification { background: #431407; color: #fb923c; border: 1px solid #ea580c; }
+        .task-badge.tb-constraint { background: #450a0a; color: #f87171; border: 1px solid #ef4444; }
 
         /* The three memory layers, side by side. Not tabs: they are all on at once, so nothing
            here is clickable and nothing is ever in an "off" state. */
@@ -115,7 +171,7 @@
             border: 1px solid var(--line); border-radius: 9px;
             color: var(--muted); font-size: 12px; line-height: 1.4;
         }
-        .layer b { color: #40454d; }
+        .layer b { color: #cbd5e1; }
         .layer > b { display: block; font-size: 14px; margin-bottom: 3px; }
         .layer .scope { display: block; margin-top: 6px; font-size: 11px; opacity: .8; }
         .layer.short-term { box-shadow: inset 0 3px 0 #1c7ed6; }
@@ -126,15 +182,15 @@
         .ltm { border-top: 3px solid #ae3ec9; margin-bottom: 18px; }
         .ltmhead { display: flex; align-items: center; justify-content: space-between;
                    gap: 12px; font-size: 12px; color: var(--muted); margin-bottom: 12px; }
-        .ltmhead b { color: #862e9c; font-size: 14px; }
+        .ltmhead b { color: #c084fc; font-size: 14px; }
         .ltmgroup { margin-top: 10px; }
         .ltmkind { display: block; font-size: 11px; color: var(--muted); margin-bottom: 2px; }
         .ltmkind b { color: #862e9c; font-size: 12px; text-transform: uppercase;
                      letter-spacing: .04em; margin-right: 6px; }
         .ltmdrop { width: 60px; text-align: right; }
-        .danger { background: transparent; border: 1px solid #e8b4b4; color: #c92a2a;
+        .danger { background: transparent; border: 1px solid #991b1b; color: #fca5a5;
                   border-radius: 6px; padding: 4px 10px; font-size: 11px; font-weight: 600; }
-        .danger:hover { background: #fff0f0; border-color: #c92a2a; }
+        .danger:hover { background: #450a0a; border-color: #ef4444; }
         /* Invariants. Red, and not sharing a colour with any memory layer or with the profile,
            because they are not one: a layer holds what was worked out, a profile holds how to
            answer, and this holds what may not be proposed at all. Sits above long-term memory for
@@ -142,16 +198,16 @@
         .inv { border-top: 3px solid #c92a2a; margin-bottom: 18px; }
         .invhead { display: flex; align-items: center; justify-content: space-between;
                    gap: 12px; font-size: 12px; color: var(--muted); margin-bottom: 12px; }
-        .invhead b { color: #c92a2a; font-size: 14px; }
+        .invhead b { color: #ef4444; font-size: 14px; }
         .invgroup { margin-top: 10px; }
         .invkind { display: block; font-size: 11px; color: var(--muted); margin-bottom: 4px; }
-        .invkind b { color: #c92a2a; font-size: 12px; text-transform: uppercase;
+        .invkind b { color: #ef4444; font-size: 12px; text-transform: uppercase;
                      letter-spacing: .04em; margin-right: 6px; }
         .invrule { display: flex; gap: 10px; align-items: baseline; padding: 6px 0;
-                   border-bottom: 1px solid #f7dcdc; font-size: 13px; }
+                   border-bottom: 1px solid #450a0a; font-size: 13px; }
         .invrule:last-child { border-bottom: 0; }
         .invrule .id { font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-                       font-size: 11px; font-weight: 700; color: #c92a2a; flex: 0 0 56px; }
+                       font-size: 11px; font-weight: 700; color: #ef4444; flex: 0 0 56px; }
         .invrule .body { flex: 1; }
         .invrule .why { display: block; font-size: 11px; color: var(--muted); font-style: italic; }
         .invrule .terms { font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -161,34 +217,34 @@
         .chk { font-size: 10px; text-transform: uppercase; letter-spacing: .04em;
                border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px;
                color: var(--muted); }
-        .chk.forbid { border-color: #c92a2a; color: #c92a2a; }
+        .chk.forbid { border-color: #ef4444; color: #ef4444; }
         .invnew { display: flex; gap: 6px; flex-wrap: wrap; align-items: center;
-                  margin-top: 14px; padding-top: 12px; border-top: 1px dashed #f0c9c9; }
+                  margin-top: 14px; padding-top: 12px; border-top: 1px dashed #991b1b; }
         .invnew input, .invnew select { border: 1px solid var(--line); border-radius: 7px;
-                                        padding: 5px 9px; font-size: 12px; background: #fff; }
+                                        padding: 5px 9px; font-size: 12px; background: #0f172a; color: var(--ink); }
         .invnew input.wide { flex: 1 1 240px; }
         /* Personalization gets its own colour, deliberately not one of the three memory colours:
            it is not a layer, and colouring it like one would say it was. */
         .persona { display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
                    margin: -8px 0 14px; font-size: 12px; color: var(--muted); }
-        .pchip { background: #eceef1; border: 1px solid var(--line); border-radius: 999px;
+        .pchip { background: #1e293b; border: 1px solid var(--line); border-radius: 999px;
                  padding: 5px 12px; font-size: 12px; font-weight: 600; color: var(--muted); }
-        .pchip:hover { background: #e4e7eb; color: var(--ink); }
-        .pchip.on { background: #fff4e6; border-color: #f76707; color: #d9480f; cursor: default; }
+        .pchip:hover { background: #334155; color: var(--ink); }
+        .pchip.on { background: #431407; border-color: #ea580c; color: #fb923c; cursor: default; }
         .persona .why { font-style: italic; opacity: .85; }
         .lenspick { border: 1px solid var(--line); border-radius: 7px; padding: 5px 9px;
-                    font-size: 12px; background: #fff; color: var(--ink); }
+                    font-size: 12px; background: #0f172a; color: var(--ink); }
         /* Branches sit under the layers because they cut across them: a fork copies short-term
            and working memory, and shares long-term with every other branch. */
         .branches { display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
                     margin: -8px 0 18px; font-size: 12px; color: var(--muted); }
-        .bchip { background: #eceef1; border: 1px solid var(--line); border-radius: 999px;
+        .bchip { background: #1e293b; border: 1px solid var(--line); border-radius: 999px;
                  padding: 5px 12px; font-size: 12px; font-weight: 600; color: var(--muted); }
-        .bchip:hover { background: #e4e7eb; color: var(--ink); }
-        .bchip.on { background: #f3e8fb; border-color: #ae3ec9; color: #862e9c; cursor: default; }
+        .bchip:hover { background: #334155; color: var(--ink); }
+        .bchip.on { background: #3b0764; border-color: #a855f7; color: #c084fc; cursor: default; }
         .bchip .at { font-weight: 400; opacity: .7; }
         .bname { border: 1px solid var(--line); border-radius: 7px; padding: 5px 9px;
-                 font-size: 12px; width: 120px; }
+                 font-size: 12px; width: 120px; background: #0f172a; color: var(--ink); }
         .fork { background: transparent; border: 1px solid var(--line); color: var(--muted);
                 border-radius: 6px; padding: 2px 8px; font-size: 11px; font-weight: 600; }
         .fork:hover { border-color: #ae3ec9; color: #862e9c; }
@@ -196,33 +252,33 @@
            these two buttons are the only things that end it. */
         .task { display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
                 margin: -8px 0 18px; font-size: 12px; color: var(--muted); }
-        .task .held { background: #ebfbee; border: 1px solid #b2e7c0; border-radius: 999px;
-                      padding: 5px 12px; color: #2b8a3e; font-weight: 600; }
-        .keep { background: transparent; border: 1px solid #b2e7c0; color: #2b8a3e;
+        .task .held { background: #052e16; border: 1px solid #166534; border-radius: 999px;
+                      padding: 5px 12px; color: #4ade80; font-weight: 600; }
+        .keep { background: transparent; border: 1px solid #166534; color: #4ade80;
                 border-radius: 6px; padding: 5px 12px; font-size: 12px; font-weight: 600; }
-        .keep:hover { background: #ebfbee; border-color: #2f9e44; }
+        .keep:hover { background: #052e16; border-color: #22c55e; }
         .keep[disabled] { opacity: .45; cursor: default; }
-        .agreed { color: #2b8a3e; font-weight: 700; font-size: 10px;
+        .agreed { color: #4ade80; font-weight: 700; font-size: 10px;
                   letter-spacing: .04em; text-transform: uppercase; }
         /* The state machine. Blue rather than green: it is beside working memory, not part of it —
            it says where the job is, not what the job established. */
         .fsm { display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
                margin: -8px 0 18px; font-size: 12px; color: var(--muted); }
-        .stage { background: #eceef1; border: 1px solid var(--line); border-radius: 999px;
-                 padding: 5px 12px; font-weight: 600; }
+        .stage { background: #1e293b; border: 1px solid var(--line); border-radius: 999px;
+                 padding: 5px 12px; font-weight: 600; color: var(--muted); }
 
         /* MCP. Teal rather than purple or green: nothing in this panel is remembered and nothing
            in it is the task — it is another process, and it should not read as either. */
         .card.mcp { border-left: 3px solid #0ca678; }
         .mcphead { display: flex; align-items: center; justify-content: space-between;
                    gap: 12px; font-size: 12px; color: var(--muted); margin-bottom: 12px; }
-        .mcphead b { color: #0b7285; font-size: 14px; }
+        .mcphead b { color: #2dd4bf; font-size: 14px; }
         /* The light. Red is the resting state, so a panel that has done nothing cannot look
            connected — green is only ever written by a handshake that actually returned. */
         .lamp { display: inline-block; width: 9px; height: 9px; border-radius: 50%;
-                background: #e03131; box-shadow: 0 0 0 3px #ffe3e3; margin-right: 7px;
+                background: #ef4444; box-shadow: 0 0 0 3px #450a0a; margin-right: 7px;
                 vertical-align: middle; }
-        .lamp.on { background: #2f9e44; box-shadow: 0 0 0 3px #d3f9d8; }
+        .lamp.on { background: #22c55e; box-shadow: 0 0 0 3px #052e16; }
         .mcpserver { margin-top: 12px; }
         /* A server that is switched off keeps its row — it is still configured, and hiding it
            would leave no way back — but it recedes, because it contributed nothing this render. */
@@ -233,17 +289,17 @@
            cannot re-pick — it is a switch, and its "on" state is exactly what you click to undo. */
         .mcpwho .pchip { margin-left: auto; cursor: pointer; }
         .mcpwho .pchip:disabled { opacity: .45; cursor: default; }
-        .mcpwho b { color: #0b7285; font-size: 12px; text-transform: uppercase;
+        .mcpwho b { color: #2dd4bf; font-size: 12px; text-transform: uppercase;
                     letter-spacing: .04em; }
         /* Which side of the network a server is on. Grey for this laptop, teal for the internet,
            so two servers in one list are told apart before either name is read. */
         .where { border: 1px solid var(--line); border-radius: 999px; padding: 1px 7px;
                  font-size: 10px; text-transform: uppercase; letter-spacing: .04em; }
-        .where.far { border-color: #63e6be; background: #e6fcf5; color: #0b7285; }
+        .where.far { border-color: #0d9488; background: #134e4a; color: #2dd4bf; }
         .mcptool { border-top: 1px solid var(--line); padding: 9px 0; }
         .mcptool:last-child { padding-bottom: 0; }
         .mcptool .tname { font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-                          font-size: 12px; font-weight: 600; color: #0b7285; }
+                          font-size: 12px; font-weight: 600; color: #2dd4bf; }
         .mcptool .tdesc { font-size: 13px; margin-top: 3px; }
         .mcparg { font-size: 12px; color: var(--muted); margin-top: 4px; padding-left: 14px; }
         .mcparg code { color: var(--ink); font-weight: 600; }
@@ -254,7 +310,7 @@
         .card.rag { border-left: 3px solid #7950f2; }
         .raghead { display: flex; align-items: center; justify-content: space-between;
                    gap: 12px; font-size: 12px; color: var(--muted); margin-bottom: 12px; }
-        .raghead b { color: #5f3dc4; font-size: 14px; }
+        .raghead b { color: #a78bfa; font-size: 14px; }
         .rag-controls { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
                         gap: 8px 14px; margin-bottom: 14px; font-size: 12px; }
         .rag-controls label { display: block; font-size: 10px; font-weight: 600;
@@ -266,34 +322,34 @@
         .rag-controls .toggle { display: flex; align-items: center; gap: 6px; }
         .rag-sources { margin-top: 8px; font-size: 12px; color: var(--muted); }
         .rag-source { display: flex; align-items: baseline; gap: 8px; padding: 3px 0;
-                      border-bottom: 1px solid #ede9fc; font-size: 12px; }
+                      border-bottom: 1px solid #334155; font-size: 12px; }
         .rag-source:last-child { border-bottom: 0; }
         .rag-score { font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-                     font-size: 11px; font-weight: 700; color: #5f3dc4;
-                     background: #f3f0ff; border: 1px solid #d0bfff;
+                     font-size: 11px; font-weight: 700; color: #a78bfa;
+                     background: #2e1065; border: 1px solid #6d28d9;
                      border-radius: 4px; padding: 1px 5px; white-space: nowrap; }
         .rag-file { font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-                    font-size: 11px; color: #495057; }
-        .rag-debug { margin-top: 12px; padding: 10px; background: #f8f6ff; border: 1px solid #e9e3ff;
-                     border-radius: 7px; font-size: 11px; color: #495057; }
-        .rag-debug summary { font-weight: 600; color: #5f3dc4; cursor: pointer; }
+                    font-size: 11px; color: #94a3b8; }
+        .rag-debug { margin-top: 12px; padding: 10px; background: #1a1333; border: 1px solid #3b0764;
+                     border-radius: 7px; font-size: 11px; color: #94a3b8; }
+        .rag-debug summary { font-weight: 600; color: #a78bfa; cursor: pointer; }
         .rag-debug table { width: 100%; border-collapse: collapse; margin-top: 6px; font-size: 11px; }
         .rag-debug th { text-align: left; font-size: 10px; font-weight: 600; text-transform: uppercase;
                         letter-spacing: .03em; color: var(--muted); padding: 3px 6px;
-                        border-bottom: 1px solid #d0bfff; }
-        .rag-debug td { padding: 3px 6px; border-bottom: 1px solid #ede9fc; vertical-align: top; }
-        .rag-debug .dropped { color: #e03131; text-decoration: line-through; opacity: .6; }
-        .rag-debug .kept { color: #2f9e44; }
-        .rag-debug .fallback { color: #e67700; font-weight: 600; }
+                        border-bottom: 1px solid #6d28d9; }
+        .rag-debug td { padding: 3px 6px; border-bottom: 1px solid #3b0764; vertical-align: top; }
+        .rag-debug .dropped { color: #ef4444; text-decoration: line-through; opacity: .6; }
+        .rag-debug .kept { color: #4ade80; }
+        .rag-debug .fallback { color: #fbbf24; font-weight: 600; }
         .rag-rewrite { display: flex; align-items: baseline; gap: 6px; margin-bottom: 6px;
                        font-size: 12px; }
         .rag-rewrite-label { font-size: 10px; font-weight: 700; text-transform: uppercase;
-                             letter-spacing: .04em; color: #7950f2;
-                             background: #f3f0ff; border: 1px solid #d0bfff;
+                             letter-spacing: .04em; color: #a78bfa;
+                             background: #2e1065; border: 1px solid #6d28d9;
                              border-radius: 4px; padding: 1px 5px; white-space: nowrap; }
         .rag-rewrite-text { font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-                            font-size: 11px; color: #495057; font-style: italic; }
-        .rag-upload { margin-top: 14px; padding-top: 12px; border-top: 1px dashed #d0bfff;
+                            font-size: 11px; color: #94a3b8; font-style: italic; }
+        .rag-upload { margin-top: 14px; padding-top: 12px; border-top: 1px dashed #6d28d9;
                       display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
         .rag-upload input[type=file] { flex: 1; font-size: 12px; }
         .rag-upload button { padding: 6px 14px; font-size: 12px; }
@@ -301,19 +357,19 @@
         .brrun .when { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
         .brrun .what { flex: 1; }
         .brlog { margin-top: 12px; }
-        .stage.on { background: #e7f5ff; border-color: #4dabf7; color: #1971c2; }
+        .stage.on { background: #1e3a5f; border-color: #3b82f6; color: #60a5fa; }
         .stage.was { opacity: .55; }
-        .stage.held { background: #fff4e6; border-color: #ffc078; color: #e8590c; }
+        .stage.held { background: #431407; border-color: #ea580c; color: #fb923c; }
         .arrow { opacity: .45; }
-        .move { background: transparent; border: 1px solid #4dabf7; color: #1971c2;
+        .move { background: transparent; border: 1px solid #3b82f6; color: #60a5fa;
                 border-radius: 6px; padding: 5px 12px; font-size: 12px; font-weight: 600; }
-        .move:hover { background: #e7f5ff; }
+        .move:hover { background: #1e3a5f; }
         .await { font-weight: 600; }
-        .await.you { color: #e8590c; }
+        .await.you { color: #fb923c; }
         .fsm .what { color: var(--muted); font-weight: 400; }
-        .notice { border-color: #b2e7c0; background: #ebfbee; color: #2b8a3e; }
+        .notice { border-color: #166534; background: #052e16; color: #4ade80; }
         /* Amber, not red: the move was declined, nothing broke. */
-        .refused { border-color: #ffd8a8; background: #fff4e6; color: #d9480f; }
+        .refused { border-color: #92400e; background: #431407; color: #fb923c; }
         .turnhead .fork { visibility: hidden; }
         .turn:hover .fork { visibility: visible; }
 
@@ -333,32 +389,32 @@
         }
         .chain-step .tname {
             font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-            font-size: 11px; font-weight: 600; color: #0b7285;
-            background: #e6fcf5; border: 1px solid #63e6be;
+            font-size: 11px; font-weight: 600; color: #2dd4bf;
+            background: #134e4a; border: 1px solid #0d9488;
             border-radius: 4px; padding: 1px 6px;
         }
-        .chain-step .tname.broke { color: #c92a2a; background: #fff5f5; border-color: #ffc9c9; }
-        .chain-arrow { color: #adb5bd; font-size: 10px; }
+        .chain-step .tname.broke { color: #fca5a5; background: #450a0a; border-color: #991b1b; }
+        .chain-arrow { color: #64748b; font-size: 10px; }
         .dl-link {
             font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
             font-size: 11px; font-weight: 600;
-            color: #1971c2; background: #e7f5ff; border: 1px solid #74c0fc;
+            color: #60a5fa; background: #1e3a5f; border: 1px solid #2563eb;
             border-radius: 4px; padding: 1px 7px;
             text-decoration: none; white-space: nowrap;
         }
-        .dl-link:hover { background: #d0ebff; border-color: #4dabf7; }
+        .dl-link:hover { background: #1e40af; border-color: #3b82f6; }
 
         .bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-        .ghost { background: transparent; color: var(--muted); border: 1px solid var(--line);
+        .ghost { background: transparent; color: var(--muted); border: 1px solid #475569;
                  padding: 6px 12px; font-size: 12px; font-weight: 600; }
-        .ghost:hover { background: #f1f3f5; color: var(--ink); }
+        .ghost:hover { background: #334155; color: var(--ink); }
         .empty { color: var(--muted); font-size: 13px; }
         .hint { text-transform: none; letter-spacing: 0; font-weight: 400; color: #9aa1ab; }
 
         /* Context window meter — one bar, drawn to scale against the model's limit. */
         .track {
             display: flex; height: 14px; border-radius: 7px; overflow: hidden;
-            background: #eef0f3; border: 1px solid var(--line); margin-bottom: 12px;
+            background: #1e293b; border: 1px solid var(--line); margin-bottom: 12px;
         }
         .seg { height: 100%; }
         .seg.sys { background: #7048e8; }
@@ -375,7 +431,7 @@
         .seg.tool { background: #0b7285; }
         .seg.tmpl { background: #f76707; }
         .seg.reserved { background: repeating-linear-gradient(45deg,
-                        #ced4da, #ced4da 4px, #e9ecef 4px, #e9ecef 8px); }
+                        #475569, #475569 4px, #334155 4px, #334155 8px); }
         .seg.free { flex: 1; }
         .key { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12px; color: var(--muted);
                font-variant-numeric: tabular-nums; }
@@ -387,9 +443,9 @@
         .gauge.warn { color: #e8590c; }
         .gauge.over { color: #e03131; }
         .note { font-size: 12px; border-radius: 7px; padding: 9px 12px; margin-top: 12px; }
-        .note.warn { background: #fff4e6; color: #9c4221; border: 1px solid #ffd8a8; }
-        .note.over { background: #fff5f5; color: #a12a2a; border: 1px solid #ffc9c9; }
-        .note.info { background: #f1f3f5; color: #495057; border: 1px solid var(--line); }
+        .note.warn { background: #431407; color: #fb923c; border: 1px solid #92400e; }
+        .note.over { background: #450a0a; color: #fca5a5; border: 1px solid #991b1b; }
+        .note.info { background: #1e293b; color: #94a3b8; border: 1px solid var(--line); }
 
         /* Growth table — one row per turn, the bar scaled to the largest prompt so far. */
         .growth { width: 100%; border-collapse: collapse; font-size: 12px;
@@ -398,7 +454,7 @@
                      text-transform: uppercase; letter-spacing: .04em; font-size: 11px;
                      padding: 0 0 8px; border-bottom: 1px solid var(--line); }
         .growth th:first-child, .growth th.wide { text-align: left; }
-        .growth td { text-align: right; padding: 7px 0; border-bottom: 1px solid #f1f3f5; }
+        .growth td { text-align: right; padding: 7px 0; border-bottom: 1px solid #334155; }
         .growth td:first-child { text-align: left; color: var(--muted); }
         .growth td.wide { text-align: left; width: 40%; padding-left: 14px; }
         .growth tr:last-child td { border-bottom: 0; }
@@ -983,7 +1039,12 @@
                      which has to be legible before the button is pressed rather than after. -->
                 <table class="facttable">
                     <tr th:each="f : ${facts.entries}">
-                        <td th:text="${f.key}">database</td>
+                        <td>
+                            <span th:text="${f.key}">database</span>
+                            <span th:if="${f.key == 'goal'}" class="task-badge tb-goal">goal</span>
+                            <span th:if="${f.key == 'clarification'}" class="task-badge tb-clarification">clarified</span>
+                            <span th:if="${f.key == 'constraint'}" class="task-badge tb-constraint">constraint</span>
+                        </td>
                         <td th:text="${f.value}">Postgres 16</td>
                         <td class="ltmdrop"><span class="agreed" th:if="${f.settled}"
                                 title="Agreed. Moves to long-term memory when the task is finished.">agreed</span></td>
@@ -1041,7 +1102,7 @@
                         </span>
                     </span>
                 </div>
-                <div class="body" th:text="${m.content}"></div>
+                <div class="body" th:text="${m.content}" th:classappend="${!m.user} ? 'rag-candidate' : ''"></div>
 
                 <!-- Tool chain — shown only on assistant turns that called at least one tool.
                      Each step is a teal badge. A saveToFile step that succeeded also gets a
@@ -1379,6 +1440,135 @@
             }
         }
     });
+
+    // Day 24: transform structured RAG answers (### Answer / ### Sources / ### Quotes)
+    // into rich HTML with citation markers, source badges, blockquotes with verification.
+    (function() {
+        function esc(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+        function formatRagAnswer(raw) {
+            // Check for ### Answer heading (handle optional leading whitespace/newlines)
+            if (!/###\s*Answer/i.test(raw)) return null;
+
+            // Extract sections by splitting on ### headings
+            var sections = {};
+            var re = /###\s+(\w+)\s*\n/gi;
+            var match;
+            var lastKey = null, lastIdx = 0;
+            while ((match = re.exec(raw)) !== null) {
+                if (lastKey) {
+                    sections[lastKey] = raw.substring(lastIdx, match.index).trim();
+                }
+                lastKey = match[1].toLowerCase();
+                lastIdx = match.index + match[0].length;
+            }
+            if (lastKey) {
+                sections[lastKey] = raw.substring(lastIdx).trim();
+            }
+
+            if (!sections['answer']) return null;
+            var html = '<div class="rag-answer">';
+
+            // Check for insufficient context or clarification request
+            var ansLower = sections['answer'].toLowerCase();
+            var insufficient = ansLower.indexOf('don\'t have enough') >= 0 ||
+                ansLower.indexOf('do not have enough') >= 0 ||
+                ansLower.indexOf('insufficient context') >= 0 ||
+                ansLower.indexOf('no relevant context') >= 0 ||
+                ansLower.indexOf('cannot answer') >= 0 ||
+                ansLower.indexOf('can\'t answer') >= 0;
+            var asksClarification = ansLower.indexOf('could you clarify') >= 0 ||
+                ansLower.indexOf('could you specify') >= 0 ||
+                ansLower.indexOf('which store') >= 0 ||
+                ansLower.indexOf('more specific') >= 0 ||
+                ansLower.indexOf('do you mean') >= 0 ||
+                ansLower.indexOf('please clarify') >= 0 ||
+                ansLower.indexOf('ambiguous') >= 0;
+
+            if (insufficient) {
+                html += '<div class="rag-insufficient"><strong>Insufficient context</strong><br/>'
+                    + esc(sections['answer']) + '</div>';
+            } else if (asksClarification) {
+                html += '<div class="rag-insufficient" style="background:#1e3a5f;border-color:#3b82f6;color:#93c5fd">'
+                    + '<strong>Clarification needed</strong><br/>'
+                    + esc(sections['answer']) + '</div>';
+            } else {
+                // Answer with citation markers highlighted
+                html += '<div class="rag-section-title">Answer</div>';
+                var ansHtml = esc(sections['answer'])
+                    .replace(/\[(\d+)\]/g, '<span class="rag-cite">$1</span>');
+                html += '<div class="rag-answer-body">' + ansHtml + '</div>';
+            }
+
+            // Sources
+            if (sections['sources'] && sections['sources'].indexOf('(none)') < 0) {
+                html += '<div class="rag-section-title">Sources</div>';
+                html += '<ul class="rag-sources">';
+                var lines = sections['sources'].split('\n');
+                var srcIdx = 1;
+                for (var j = 0; j < lines.length; j++) {
+                    var ln = lines[j].replace(/^[-*•]\s*/, '').replace(/^\[\d+\]\s*/, '').trim();
+                    if (!ln) continue;
+                    var pipeParts = ln.split('|');
+                    var file = pipeParts[0].trim();
+                    var rest = pipeParts.length > 1 ? pipeParts.slice(1).join('|').trim() : '';
+                    var chunkMatch = rest.match(/\(([^)]+)\)\s*$/);
+                    var section = chunkMatch ? rest.substring(0, chunkMatch.index).trim() : rest;
+                    var chunkId = chunkMatch ? chunkMatch[1] : '';
+                    html += '<li><span class="src-idx">' + srcIdx + '</span>'
+                        + '<span class="src-file">' + esc(file) + '</span>';
+                    if (section) html += ' <span class="src-section">| ' + esc(section) + '</span>';
+                    if (chunkId) html += ' <span class="src-chunk">(' + esc(chunkId) + ')</span>';
+                    html += '</li>';
+                    srcIdx++;
+                }
+                html += '</ul>';
+            } else if (sections['sources']) {
+                html += '<div class="rag-section-title">Sources</div>';
+                html += '<div style="color:#64748b;font-size:13px;margin:4px 0">(none)</div>';
+            }
+
+            // Quotes — handle both > "..." and - "..." formats
+            if (sections['quotes'] && sections['quotes'].indexOf('(none)') < 0) {
+                html += '<div class="rag-section-title">Quotes</div>';
+                var qlines = sections['quotes'].split('\n');
+                for (var k = 0; k < qlines.length; k++) {
+                    var ql = qlines[k].trim();
+                    if (!ql) continue;
+                    // Try: > "quote" — source  OR  - "quote" — source  OR  > quote text
+                    var qm = ql.match(/^[>*•-]\s*"([^"]+)"\s*(?:[—–\u2014-]\s*(.+))?$/) ||
+                             ql.match(/^[>*•-]\s*\u201c([^\u201d]+)\u201d\s*(?:[—–\u2014-]\s*(.+))?$/);
+                    if (qm) {
+                        html += '<div class="rag-quote">\u201c' + esc(qm[1].trim()) + '\u201d';
+                        if (qm[2]) html += '<span class="quote-src"> \u2014 ' + esc(qm[2].trim()) + '</span>';
+                        html += '</div>';
+                    } else if (ql.startsWith('>')) {
+                        var qt = ql.substring(1).trim();
+                        if (qt.startsWith('"') || qt.startsWith('\u201c')) {
+                            qt = qt.replace(/^[""\u201c]|[""\u201d]$/g, '');
+                        }
+                        html += '<div class="rag-quote">\u201c' + esc(qt) + '\u201d</div>';
+                    }
+                }
+            } else if (sections['quotes']) {
+                html += '<div class="rag-section-title">Quotes</div>';
+                html += '<div style="color:#64748b;font-size:13px;margin:4px 0">(none)</div>';
+            }
+
+            html += '</div>';
+            return html;
+        }
+
+        // Apply to all assistant message bodies on page load
+        document.querySelectorAll('.body.rag-candidate').forEach(function(el) {
+            var raw = el.textContent;
+            var formatted = formatRagAnswer(raw);
+            if (formatted) {
+                el.innerHTML = formatted;
+                el.classList.add('rag-formatted');
+            }
+        });
+    })();
 </script>
 </body>
 </html>
