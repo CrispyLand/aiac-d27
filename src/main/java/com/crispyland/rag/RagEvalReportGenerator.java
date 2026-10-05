@@ -45,6 +45,12 @@ public final class RagEvalReportGenerator {
         // Summary cards
         appendSummaryCards(html, byMode, modeNames);
 
+        // Summary table
+        appendSummaryTable(html, byMode, modeNames);
+
+        // Analysis & commentary
+        appendAnalysis(html, byMode, modeNames, questions, results);
+
         // Bar chart
         appendBarChart(html, byMode, modeNames);
 
@@ -99,6 +105,38 @@ public final class RagEvalReportGenerator {
                 .dot-partial { background: #eab308; }
                 .dot-wrong { background: #ef4444; }
                 .dot-hallucinated { background: #f97316; }
+
+                /* Summary table */
+                table.summary {
+                    width: 100%; border-collapse: collapse; background: #1e293b;
+                    border-radius: 12px; overflow: hidden; border: 1px solid #334155;
+                    margin-bottom: 2rem;
+                }
+                table.summary th, table.summary td {
+                    padding: 0.65rem 1rem; text-align: center; font-size: 0.85rem;
+                    border-bottom: 1px solid #293548;
+                }
+                table.summary th { background: #0f172a; color: #94a3b8; font-weight: 600; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.04em; }
+                table.summary td:first-child { text-align: left; font-weight: 500; color: #e2e8f0; }
+                table.summary tr:last-child td { border-bottom: none; }
+                table.summary .num-correct { color: #22c55e; font-weight: 700; }
+                table.summary .num-partial { color: #eab308; font-weight: 700; }
+                table.summary .num-wrong { color: #ef4444; font-weight: 700; }
+                table.summary .num-hallucinated { color: #f97316; font-weight: 700; }
+
+                /* Analysis */
+                .analysis { background: #1e293b; border-radius: 12px; padding: 1.5rem; border: 1px solid #334155; margin-bottom: 2rem; }
+                .analysis p { margin-bottom: 0.75rem; font-size: 0.9rem; color: #cbd5e1; line-height: 1.7; }
+                .analysis strong { color: #f8fafc; }
+                .analysis .mode-tag { display: inline; padding: 0.15rem 0.45rem; border-radius: 4px; font-size: 0.8rem; font-weight: 600; }
+                .analysis .mode-tag.baseline { background: #334155; color: #e2e8f0; }
+                .analysis .mode-tag.similarity-only { background: #1e3a5f; color: #93c5fd; }
+                .analysis .mode-tag.sim-rerank { background: #2e1065; color: #c4b5fd; }
+                .analysis .mode-tag.sim-rerank-rewrite { background: #064e3b; color: #6ee7b7; }
+                .analysis .highlight { color: #22c55e; font-weight: 600; }
+                .analysis .warn { color: #eab308; font-weight: 600; }
+                .analysis ul { margin: 0.5rem 0 1rem 1.5rem; font-size: 0.85rem; color: #94a3b8; }
+                .analysis li { margin-bottom: 0.3rem; }
 
                 /* Chart */
                 .chart-container { background: #1e293b; border-radius: 12px; padding: 1.5rem; border: 1px solid #334155; margin-bottom: 2rem; }
@@ -200,6 +238,167 @@ public final class RagEvalReportGenerator {
             html.append("</div>\n");
         }
         html.append("</div>\n");
+    }
+
+    private static void appendSummaryTable(StringBuilder html, Map<String, List<QuestionResult>> byMode, List<String> modeNames) {
+        html.append("<h2>Summary</h2>\n");
+        html.append("<div class=\"matrix-wrap\">\n<table class=\"summary\">\n<thead><tr>\n");
+        html.append("  <th>Mode</th><th>Correct</th><th>Partial</th><th>Wrong</th><th>Hallucinated</th>")
+                .append("<th>Avg RAG ms</th><th>Avg Answer ms</th><th>Total Tokens</th><th>Fallbacks</th>\n");
+        html.append("</tr></thead>\n<tbody>\n");
+
+        for (String mode : modeNames) {
+            List<QuestionResult> mr = byMode.get(mode);
+            long correct = mr.stream().filter(r -> "correct".equals(r.answerScore())).count();
+            long partial = mr.stream().filter(r -> "partial".equals(r.answerScore())).count();
+            long wrong = mr.stream().filter(r -> "wrong".equals(r.answerScore())).count();
+            long hallucinated = mr.stream().filter(r -> "hallucinated".equals(r.answerScore())).count();
+            long avgRagMs = mr.stream().mapToLong(QuestionResult::ragLatencyMs).sum() / Math.max(mr.size(), 1);
+            long avgAnswerMs = mr.stream().mapToLong(QuestionResult::answerLatencyMs).sum() / Math.max(mr.size(), 1);
+            long totalTokens = mr.stream()
+                    .mapToLong(r -> r.ragUsage().totalTokens() + r.answerUsage().totalTokens())
+                    .sum();
+            long fallbacks = mr.stream().filter(QuestionResult::rerankFellBack).count();
+
+            html.append("<tr>\n");
+            html.append("  <td>").append(escHtml(mode)).append("</td>\n");
+            html.append("  <td class=\"num-correct\">").append(correct).append("</td>\n");
+            html.append("  <td class=\"num-partial\">").append(partial).append("</td>\n");
+            html.append("  <td class=\"num-wrong\">").append(wrong).append("</td>\n");
+            html.append("  <td class=\"num-hallucinated\">").append(hallucinated).append("</td>\n");
+            html.append("  <td>").append(avgRagMs).append("</td>\n");
+            html.append("  <td>").append(avgAnswerMs).append("</td>\n");
+            html.append("  <td>").append(String.format("%,d", totalTokens)).append("</td>\n");
+            html.append("  <td>").append(fallbacks > 0 ? fallbacks : "-").append("</td>\n");
+            html.append("</tr>\n");
+        }
+
+        html.append("</tbody>\n</table>\n</div>\n");
+    }
+
+    private static void appendAnalysis(StringBuilder html, Map<String, List<QuestionResult>> byMode,
+                                         List<String> modeNames, List<Question> questions, List<QuestionResult> allResults) {
+        html.append("<h2>Analysis</h2>\n");
+        html.append("<div class=\"analysis\">\n");
+
+        // Mode descriptions
+        html.append("<p><strong>What each mode does:</strong></p>\n");
+        html.append("<ul>\n");
+        html.append("<li><span class=\"mode-tag baseline\">baseline</span> — No RAG retrieval. The LLM answers from its own training data only.</li>\n");
+        html.append("<li><span class=\"mode-tag similarity-only\">similarity-only</span> — Cosine similarity search over embeddings. Top-k chunks injected into the prompt.</li>\n");
+        html.append("<li><span class=\"mode-tag sim-rerank\">sim+rerank</span> — First-pass cosine retrieval, then an LLM rescores and reorders the candidates before injecting.</li>\n");
+        html.append("<li><span class=\"mode-tag sim-rerank-rewrite\">sim+rerank+rewrite</span> — Same as above, but the user query is first rewritten by an LLM to resolve pronouns and add context from the conversation.</li>\n");
+        html.append("</ul>\n");
+
+        // Find best mode
+        String bestMode = null;
+        long bestCorrect = -1;
+        for (String mode : modeNames) {
+            long correct = byMode.get(mode).stream().filter(r -> "correct".equals(r.answerScore())).count();
+            if (correct > bestCorrect) {
+                bestCorrect = correct;
+                bestMode = mode;
+            }
+        }
+
+        // Compute follow-up question performance
+        long followUpCount = questions.stream().filter(q -> "follow-up".equals(q.category())).count();
+
+        html.append("<p><strong>Key findings:</strong></p>\n");
+        html.append("<ul>\n");
+
+        // Best mode
+        if (bestMode != null) {
+            long total = byMode.get(bestMode).size();
+            long partial = byMode.get(bestMode).stream().filter(r -> "partial".equals(r.answerScore())).count();
+            html.append("<li><span class=\"mode-tag ").append(bestMode.replace("+", "-")).append("\">")
+                    .append(escHtml(bestMode)).append("</span> is the <span class=\"highlight\">best-performing mode</span> with ")
+                    .append(bestCorrect).append("/").append(total).append(" correct");
+            if (partial > 0) html.append(" + ").append(partial).append(" partial");
+            html.append(".</li>\n");
+        }
+
+        // Baseline comparison
+        if (modeNames.contains("baseline") && bestMode != null && !"baseline".equals(bestMode)) {
+            long baselineCorrect = byMode.get("baseline").stream().filter(r -> "correct".equals(r.answerScore())).count();
+            long delta = bestCorrect - baselineCorrect;
+            if (delta > 0) {
+                html.append("<li>RAG retrieval adds <span class=\"highlight\">+").append(delta)
+                        .append(" correct answers</span> over baseline (pure LLM knowledge).</li>\n");
+            } else if (delta == 0) {
+                html.append("<li>RAG retrieval matches baseline — the LLM already knows these answers from training data.</li>\n");
+            }
+        }
+
+        // Follow-up question analysis (query rewriter value)
+        if (followUpCount > 0 && modeNames.contains("sim+rerank+rewrite")) {
+            Map<Integer, Map<String, QuestionResult>> indexed = new LinkedHashMap<>();
+            for (QuestionResult r : allResults) {
+                indexed.computeIfAbsent(r.number(), k -> new LinkedHashMap<>()).put(r.mode(), r);
+            }
+            int rewriteWins = 0;
+            for (Question q : questions) {
+                if (!"follow-up".equals(q.category())) continue;
+                Map<String, QuestionResult> row = indexed.getOrDefault(q.number(), Map.of());
+                QuestionResult withRewrite = row.get("sim+rerank+rewrite");
+                QuestionResult without = row.get("sim+rerank");
+                if (withRewrite != null && without != null) {
+                    int rw = scoreValue(withRewrite.answerScore());
+                    int nr = scoreValue(without.answerScore());
+                    if (rw > nr) rewriteWins++;
+                }
+            }
+            if (rewriteWins > 0) {
+                html.append("<li>Query rewriting improves <span class=\"highlight\">").append(rewriteWins).append(" of ")
+                        .append(followUpCount).append(" follow-up questions</span> — it resolves pronouns like \"it\" and \"that\" using conversation context.</li>\n");
+            } else {
+                html.append("<li>Query rewriting shows <span class=\"warn\">no improvement</span> on follow-up questions in this run — the rewriter may be rephrasing in ways that drift from the original intent.</li>\n");
+            }
+        }
+
+        // Reranker fallback check
+        long totalFallbacks = allResults.stream().filter(QuestionResult::rerankFellBack).count();
+        if (totalFallbacks > 0) {
+            html.append("<li><span class=\"warn\">").append(totalFallbacks)
+                    .append(" reranker fallback(s)</span> — the LLM reranker returned invalid JSON or timed out, falling back to cosine-only ordering.</li>\n");
+        } else {
+            boolean hasRerank = modeNames.stream().anyMatch(m -> m.contains("rerank"));
+            if (hasRerank) {
+                html.append("<li>Zero reranker fallbacks — all LLM reranking calls returned valid JSON.</li>\n");
+            }
+        }
+
+        // Token cost comparison
+        if (modeNames.size() >= 2) {
+            String cheapest = null; long cheapestTokens = Long.MAX_VALUE;
+            String costliest = null; long costliestTokens = 0;
+            for (String mode : modeNames) {
+                long tokens = byMode.get(mode).stream()
+                        .mapToLong(r -> r.ragUsage().totalTokens() + r.answerUsage().totalTokens()).sum();
+                if (tokens < cheapestTokens) { cheapestTokens = tokens; cheapest = mode; }
+                if (tokens > costliestTokens) { costliestTokens = tokens; costliest = mode; }
+            }
+            if (cheapest != null && costliest != null && !cheapest.equals(costliest)) {
+                html.append("<li>Token cost ranges from <strong>").append(String.format("%,d", cheapestTokens))
+                        .append("</strong> (").append(escHtml(cheapest)).append(") to <strong>")
+                        .append(String.format("%,d", costliestTokens)).append("</strong> (").append(escHtml(costliest))
+                        .append(") — a ").append(String.format("%.1fx", (double) costliestTokens / cheapestTokens))
+                        .append(" difference.</li>\n");
+            }
+        }
+
+        html.append("</ul>\n");
+        html.append("</div>\n");
+    }
+
+    private static int scoreValue(String score) {
+        return switch (score) {
+            case "correct" -> 3;
+            case "partial" -> 2;
+            case "wrong" -> 1;
+            case "hallucinated" -> 0;
+            default -> 0;
+        };
     }
 
     private static void appendBarChart(StringBuilder html, Map<String, List<QuestionResult>> byMode, List<String> modeNames) {
