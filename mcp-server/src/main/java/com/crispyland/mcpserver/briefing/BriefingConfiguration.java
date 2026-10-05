@@ -47,7 +47,7 @@ public class BriefingConfiguration {
         JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory();
         requestFactory.setReadTimeout(properties.narrator().timeout());
         RestClient restClient = RestClient.builder().requestFactory(requestFactory).build();
-        return new GroqBriefingNarrator(restClient, mapper, properties.narrator());
+        return new CerebrasBriefingNarrator(restClient, mapper, properties.narrator());
     }
 
     /**

@@ -20,11 +20,11 @@ agent:
       "[gpt-oss-120b]": 500
       "[qwen/qwen3.8-27b]": 500
       "[qwen/qwen3.6-27b]": 500
-      "[groq/compound-mini]": 500
+      "[cerebras/compound-mini]": 500
     default-window: 500
 
     # Flip to `trim` to show the dialogue surviving by forgetting, or `off` to let
-    # Groq reject the call itself — note that at a 500-token pretend window `off`
+    # Cerebras reject the call itself — note that at a 500-token pretend window `off`
     # will simply succeed, because the real model is happy to take it.
     overflow-policy: fail
 

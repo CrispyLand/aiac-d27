@@ -9,7 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * Counting the message text is the easy half. The provider then wraps it in a template the
  * caller never sees: {@code gpt-oss} uses the harmony format, which prepends model identity,
  * a knowledge cutoff, the reasoning level and channel instructions to every single request.
- * Measured against Groq, that is roughly sixty tokens that no amount of encoding the user's
+ * Measured against Cerebras, that is roughly sixty tokens that no amount of encoding the user's
  * own text will ever reveal — an estimator that ignores it under-counts by more than half on
  * short prompts, which is the wrong direction for a budget to be wrong in.
  * <p>

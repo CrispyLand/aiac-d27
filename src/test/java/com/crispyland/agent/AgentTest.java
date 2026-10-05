@@ -1388,7 +1388,7 @@ class AgentTest {
     /** The same four turns, at the length a real message actually runs to. */
     private AgentResult wordyDialogue(Agent target) {
         target.handle(C1, Persona.NONE, "my name is Nur and I am building an agent in Spring Boot "
-                + "that talks to Groq models", null);
+                + "that talks to Cerebras models", null);
         target.handle(C1, Persona.NONE, "it keeps a transcript and replays every word of it on each "
                 + "turn, which gets expensive", null);
         target.handle(C1, Persona.NONE, "today I am adding compression so the old turns become notes "

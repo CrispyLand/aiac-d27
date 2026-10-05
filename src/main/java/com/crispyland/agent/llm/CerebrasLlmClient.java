@@ -19,16 +19,16 @@ import tools.jackson.databind.node.ObjectNode;
 
 /**
  * The single class in the whole application that performs HTTP and touches JSON.
- * Speaks the OpenAI-compatible chat-completions dialect that Groq exposes.
+ * Speaks the OpenAI-compatible chat-completions dialect that Cerebras exposes.
  */
-public class GroqLlmClient implements LlmClient {
+public class CerebrasLlmClient implements LlmClient {
 
     private final RestClient restClient;
     private final ObjectMapper mapper;
     private final String endpoint;
     private final String apiKey;
 
-    public GroqLlmClient(RestClient restClient, ObjectMapper mapper, String endpoint, String apiKey) {
+    public CerebrasLlmClient(RestClient restClient, ObjectMapper mapper, String endpoint, String apiKey) {
         this.restClient = restClient;
         this.mapper = mapper;
         this.endpoint = endpoint;
@@ -171,12 +171,12 @@ public class GroqLlmClient implements LlmClient {
         try {
             root = mapper.readTree(body);
         } catch (JacksonException e) {
-            throw new LlmException("Groq returned a body that is not JSON: " + summarize(body), e);
+            throw new LlmException("LLM API returned a body that is not JSON: " + summarize(body), e);
         }
 
         JsonNode choice = root.path("choices").path(0);
         if (choice.isMissingNode()) {
-            throw new LlmException("Groq response contained no choices: " + summarize(body));
+            throw new LlmException("LLM API response contained no choices: " + summarize(body));
         }
         JsonNode message = choice.path("message");
         String content = text(message.path("content"));

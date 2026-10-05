@@ -65,7 +65,7 @@ class ContextPlannerTest {
         assertThat(first.calibrated()).isFalse();
         assertThat(first.overheadTokens()).isZero();
 
-        // Groq reports 60 tokens more than the messages alone encode to: that gap is the
+        // Cerebras reports 60 tokens more than the messages alone encode to: that gap is the
         // harmony template, and it is the same on every subsequent call.
         overhead.observe("gpt-oss-120b", first.countedTokens(), first.countedTokens() + 60);
 

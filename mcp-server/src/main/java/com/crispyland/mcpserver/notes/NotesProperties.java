@@ -9,14 +9,14 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  *
  * @param directory where {@code saveToFile} writes. Relative by default — must be overridden to
  *                  an absolute path under systemd, same reason as {@code briefing.file}
- * @param groq      the model call that {@code summarize} makes
+ * @param cerebras  the model call that {@code summarize} makes
  */
 @ConfigurationProperties(prefix = "notes")
-public record NotesProperties(String directory, Groq groq) {
+public record NotesProperties(String directory, Cerebras cerebras) {
 
     public NotesProperties {
         directory = (directory == null || directory.isBlank()) ? "./notes" : directory.strip();
-        groq = (groq == null) ? new Groq(null, null, null, 0, -1, null, null) : groq;
+        cerebras = (cerebras == null) ? new Cerebras(null, null, null, 0, -1, null, null) : cerebras;
     }
 
     public Path path() {
@@ -24,13 +24,13 @@ public record NotesProperties(String directory, Groq groq) {
     }
 
     /**
-     * @param apiKey          shared with the briefing narrator via {@code ${GROQ_API_KEY:}}
+     * @param apiKey          shared with the briefing narrator via {@code ${CEREBRAS_API_KEY:}}
      * @param maxTokens       higher than the briefing narrator — notes can be several paragraphs
      * @param reasoningEffort {@code low} for the same reason as the narrator: without it
      *                        {@code gpt-oss} spends the token budget deliberating and returns
      *                        nothing
      */
-    public record Groq(
+    public record Cerebras(
             String apiKey,
             String endpoint,
             String model,
@@ -39,7 +39,7 @@ public record NotesProperties(String directory, Groq groq) {
             Duration timeout,
             String reasoningEffort) {
 
-        public Groq {
+        public Cerebras {
             apiKey = (apiKey == null) ? "" : apiKey.strip();
             endpoint = (endpoint == null || endpoint.isBlank())
                     ? "https://api.cerebras.ai/v1/chat/completions" : endpoint.strip();

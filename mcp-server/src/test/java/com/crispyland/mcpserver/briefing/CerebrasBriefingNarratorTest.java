@@ -27,9 +27,9 @@ import tools.jackson.databind.json.JsonMapper;
  * with no symptom anywhere. That is why it is asserted on the wire here and not merely defaulted in a
  * record.
  */
-class GroqBriefingNarratorTest {
+class CerebrasBriefingNarratorTest {
 
-    private static final String ENDPOINT = "https://api.groq.com/openai/v1/chat/completions";
+    private static final String ENDPOINT = "https://api.cerebras.ai/v1/chat/completions";
 
     private static final Briefing DAY = new Briefing(LocalDate.of(2026, 9, 26),
             Instant.parse("2026-09-26T11:02:38Z"), 6, 2, 240, 4, 2,
@@ -47,7 +47,7 @@ class GroqBriefingNarratorTest {
         RestClient.Builder builder = RestClient.builder();
         MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
         return new Fixture(
-                new GroqBriefingNarrator(builder.build(), JsonMapper.builder().build(), settings),
+                new CerebrasBriefingNarrator(builder.build(), JsonMapper.builder().build(), settings),
                 server);
     }
 

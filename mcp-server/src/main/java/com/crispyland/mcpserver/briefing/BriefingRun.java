@@ -13,7 +13,7 @@ import java.time.Instant;
  *
  * @param at             when the attempt started
  * @param ok             whether the figures were collected and stored. Independent of
- *                       {@code narrated} — a run that stored a day but could not reach Groq is a
+ *                       {@code narrated} — a run that stored a day but could not reach Cerebras is a
  *                       successful collection with no sentence, and flattening the two into one
  *                       boolean would make a missing API key look like a broken calendar
  * @param narrated       whether a sentence was written on this run. False for failures, for runs

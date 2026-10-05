@@ -35,7 +35,6 @@ Remote MCP server: Frankfurter (`https://mcp.frankfurter.dev`) over streamable-H
 - **Available models (as of Day 20):** `gpt-oss-120b` only (no `openai/` prefix, no `gpt-oss-20b`)
 - `reasoning_effort` is **not supported** — always `""`, never set it
 - All background tasks (summarizer, facts extractor, compressor, invariant guard, briefing narrator, notes summarizer) use `gpt-oss-120b`
-- The Java class is still named `GroqLlmClient` internally — do not rename it
 
 ---
 
@@ -110,7 +109,7 @@ Tools exposed by the MCP servers:
 - `spring-ai-starter-mcp-server-webmvc` does not auto-configure `RestClient.Builder` — use `RestClient.create()` directly in weather server
 - MCP client `initialized: false` — keeps agent bootable when MCP server is down
 - MCP client `toolcallback.enabled: false` — tools go through `McpToolBox`, not Spring AI's ChatClient
-- Agent does not use Spring AI's `ChatClient` — it posts to the LLM endpoint directly via `GroqLlmClient`
+- Agent does not use Spring AI's `ChatClient` — it posts to the LLM endpoint directly via `CerebrasLlmClient`
 - Context window is capped at 50000 tokens (Cerebras account limit)
 - `reasoning-effort: ""` everywhere — Cerebras does not support it
 

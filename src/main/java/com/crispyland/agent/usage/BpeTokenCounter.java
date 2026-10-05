@@ -16,7 +16,7 @@ import java.util.List;
  * optimistic. BPE gets within a couple of percent.
  * <p>
  * Caveat, stated plainly: {@code o200k_base} is OpenAI's vocabulary. The {@code gpt-oss}
- * models on Groq use the harmony encoding built on that same vocabulary, so the numbers are
+ * models on Cerebras use the harmony encoding built on that same vocabulary, so the numbers are
  * near-exact there; Qwen ships its own tokenizer, so its counts are an approximation of the
  * right order of magnitude. This is why the agent treats the estimate as a planning figure
  * and reconciles it against the provider's reported usage on every turn.

@@ -27,6 +27,9 @@ import com.crispyland.agent.task.PausedTurn;
 import com.crispyland.agent.task.TaskStage;
 import com.crispyland.agent.task.TaskState;
 import com.crispyland.rag.Chunk;
+import com.crispyland.rag.RagConfig;
+import com.crispyland.rag.RagProperties;
+import com.crispyland.rag.RagSearchResult;
 import com.crispyland.rag.RagSearcher;
 import com.crispyland.rag.RagState;
 import com.crispyland.rag.ScoredChunk;
@@ -61,12 +64,14 @@ public class ChatController {
     private final ActiveProfile activeProfile;
     private final RagState ragState;
     private final RagSearcher ragSearcher;
+    private final RagProperties ragProperties;
 
     public ChatController(Agent agent, AgentProperties properties,
                           ConversationIdResolver conversationIds, Branches branches,
                           LongTermStore longTerm, Profiles profiles, PersonaSelector personas,
                           ActiveProfile activeProfile,
-                          RagState ragState, RagSearcher ragSearcher) {
+                          RagState ragState, RagSearcher ragSearcher,
+                          RagProperties ragProperties) {
         this.agent = agent;
         this.properties = properties;
         this.conversationIds = conversationIds;
@@ -77,6 +82,7 @@ public class ChatController {
         this.activeProfile = activeProfile;
         this.ragState = ragState;
         this.ragSearcher = ragSearcher;
+        this.ragProperties = ragProperties;
     }
 
     @GetMapping("/")
@@ -97,7 +103,8 @@ public class ChatController {
         model.addAttribute("budget", agent.budget(scope, selection.persona(), config));
         addOptions(model, config);
         model.addAttribute("ragEnabled", ragState.isEnabled());
-        model.addAttribute("ragSources", List.of());
+        model.addAttribute("ragResult", RagSearchResult.empty(""));
+        model.addAttribute("ragConfig", RagConfig.from(ragProperties));
         return "chat";
     }
 
@@ -116,7 +123,14 @@ public class ChatController {
     @PostMapping("/")
     public String ask(@ModelAttribute("form") ChatForm form, BindingResult binding,
                       @RequestParam(required = false) String whenPaused,
-                      @RequestParam(required = false) String whenBlocked, Model model,
+                      @RequestParam(required = false) String whenBlocked,
+                      @RequestParam(required = false) Integer ragCandidateK,
+                      @RequestParam(required = false) Integer ragFinalK,
+                      @RequestParam(required = false) Float ragSimilarityThreshold,
+                      @RequestParam(required = false) Boolean ragRerankEnabled,
+                      @RequestParam(required = false) Integer ragRerankScoreThreshold,
+                      @RequestParam(required = false) Boolean ragQueryRewriteEnabled,
+                      Model model,
                       HttpServletRequest request, HttpServletResponse response) {
         MemoryScope scope = scope(request, response);
         addBranches(model, scope.visitor());
@@ -135,7 +149,8 @@ public class ChatController {
             addMemory(model, scope, agent.transcript(scope.conversation()));
             model.addAttribute("budget", agent.budget(scope, persona, properties.defaultConfig()));
             model.addAttribute("ragEnabled", ragState.isEnabled());
-            model.addAttribute("ragSources", List.of());
+            model.addAttribute("ragResult", RagSearchResult.empty(form.userInput()));
+            model.addAttribute("ragConfig", RagConfig.from(ragProperties));
             return "chat";
         }
 
@@ -147,49 +162,54 @@ public class ChatController {
             agent.resumeTask(scope);
         }
 
-        // RAG: embed the question, retrieve relevant chunks, and prepend them to the prompt.
-        List<ScoredChunk> ragSources = List.of();
+        // RAG pipeline: rewrite query → embed → initial retrieval → rerank.
+        // The original question is stored in the transcript; the LLM receives the enriched prompt.
+        RagConfig ragConfig = RagConfig.merge(ragCandidateK, ragFinalK, ragSimilarityThreshold,
+                ragRerankEnabled, ragRerankScoreThreshold, ragQueryRewriteEnabled, ragProperties);
+        RagSearchResult ragResult = RagSearchResult.empty(form.userInput());
         String effectiveInput = form.userInput();
         if (ragState.isEnabled()) {
-            ragSources = ragSearcher.search(form.userInput());
-            if (!ragSources.isEmpty()) {
-                effectiveInput = buildRagPrompt(ragSources, form.userInput());
+            List<String> recentContext = agent.transcript(scope.conversation()).stream()
+                    .filter(m -> m.isUser() || "assistant".equals(m.role()))
+                    .map(m -> m.role() + ": " + m.content())
+                    .toList();
+            int contextTail = Math.min(6, recentContext.size());
+            recentContext = recentContext.subList(recentContext.size() - contextTail, recentContext.size());
+            ragResult = ragSearcher.search(form.userInput(), recentContext, ragConfig);
+            if (!ragResult.isEmpty()) {
+                effectiveInput = buildRagPrompt(ragResult.finalChunks(), form.userInput());
             }
         }
         model.addAttribute("ragEnabled", ragState.isEnabled());
+        model.addAttribute("ragConfig", ragConfig);
 
         try {
             AgentResult result = agent.handle(scope, persona, form.userInput(), effectiveInput,
                     form.toAgentConfig(), PausedTurn.from(whenPaused), BlockedTurn.from(whenBlocked));
             model.addAttribute("result", result);
-            model.addAttribute("ragSources", ragSources);
+            model.addAttribute("ragResult", ragResult);
             addMemory(model, scope, result.transcript());
             model.addAttribute("budget", agent.budget(scope, persona, result.effectiveConfig()));
             // Keep the settings the agent actually used, but clear the box for the next turn.
             model.addAttribute("form", ChatForm.of("", result.effectiveConfig(), form.selectedLens()));
         } catch (TaskPausedException e) {
-            // Not an error, and deliberately not silent. The typed message is still in the box
-            // because this branch leaves the bound form alone, so "Resume and send" re-posts it.
             model.addAttribute("paused", e.getMessage());
-            model.addAttribute("ragSources", List.of());
+            model.addAttribute("ragResult", RagSearchResult.empty(form.userInput()));
             addMemory(model, scope, agent.transcript(scope.conversation()));
             model.addAttribute("budget", agent.budget(scope, persona, form.toAgentConfig()));
         } catch (StageBlockedException e) {
-            // Same shape as the pause: not an error, and the typed message stays in the box so
-            // whichever button they pick re-posts it rather than making them write it twice.
             model.addAttribute("blocked", e.getMessage());
-            model.addAttribute("ragSources", List.of());
+            model.addAttribute("ragResult", RagSearchResult.empty(form.userInput()));
             addMemory(model, scope, agent.transcript(scope.conversation()));
             model.addAttribute("budget", agent.budget(scope, persona, form.toAgentConfig()));
         } catch (ContextOverflowException e) {
-            // Show the budget that caused the refusal, not the one the dialogue merely sits at.
             model.addAttribute("error", e.getMessage());
             model.addAttribute("budget", e.budget());
-            model.addAttribute("ragSources", List.of());
+            model.addAttribute("ragResult", RagSearchResult.empty(form.userInput()));
             addMemory(model, scope, agent.transcript(scope.conversation()));
         } catch (AgentException e) {
             model.addAttribute("error", e.getMessage());
-            model.addAttribute("ragSources", List.of());
+            model.addAttribute("ragResult", RagSearchResult.empty(form.userInput()));
             addMemory(model, scope, agent.transcript(scope.conversation()));
             model.addAttribute("budget", agent.budget(scope, persona, form.toAgentConfig()));
         }

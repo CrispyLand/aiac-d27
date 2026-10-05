@@ -64,7 +64,7 @@ public class BriefingScheduler {
      * Start the stored schedule, and collect once if today has never been collected.
      * <p>
      * On {@code ApplicationReadyEvent} rather than in the constructor: the first collection talks to
-     * Google and then to Groq, and a bean that does that while the context is still being built turns
+     * Google and then to Cerebras, and a bean that does that while the context is still being built turns
      * a network hiccup into a failure to start.
      * <p>
      * The catch-up is deliberately the blunt version — "no snapshot for today" rather than "past

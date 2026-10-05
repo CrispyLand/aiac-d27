@@ -44,8 +44,8 @@ public class DocumentLoader {
                 if (text.isBlank()) continue;
 
                 String fileType = fileType(filename);
-                String sourceFile = "docs/" + filename;
-                String module = moduleOf(filename);
+                String sourceFile = extractRelativePath(res, filename);
+                String module = moduleOf(sourceFile);
 
                 docs.add(new LoadedDocument(sourceFile, module, fileType, text));
                 log.debug("Loaded {} ({} chars)", sourceFile, text.length());
@@ -57,6 +57,18 @@ public class DocumentLoader {
         return docs;
     }
 
+    /** Extracts a path like "docs/com/crispyland/agent/Agent.java" from the resource URL. */
+    private static String extractRelativePath(Resource res, String fallbackName) {
+        try {
+            String url = res.getURL().toString();
+            int docsIdx = url.indexOf("/docs/");
+            if (docsIdx >= 0) {
+                return url.substring(docsIdx + 1); // "docs/com/crispyland/..."
+            }
+        } catch (IOException ignored) {}
+        return "docs/" + fallbackName;
+    }
+
     private static String fileType(String name) {
         if (name.endsWith(".java")) return "java";
         if (name.endsWith(".md"))   return "md";
@@ -64,9 +76,9 @@ public class DocumentLoader {
         return "txt";
     }
 
-    private static String moduleOf(String name) {
-        if (name.startsWith("mcp-"))     return "mcp-server";
-        if (name.startsWith("weather-")) return "weather-server";
+    private static String moduleOf(String path) {
+        if (path.contains("mcp-server"))     return "mcp-server";
+        if (path.contains("weather-server")) return "weather-server";
         return "agent";
     }
 }

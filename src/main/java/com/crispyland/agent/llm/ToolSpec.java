@@ -14,7 +14,7 @@ import java.util.Map;
  *                   Deliberately not a string and deliberately not modelled as Java types: it is
  *                   somebody else's schema, this application has no business understanding it, and
  *                   the only code that needs to is the one class allowed to touch JSON. Passing the
- *                   map keeps that true — {@link GroqLlmClient} converts it, nobody else parses it
+ *                   map keeps that true — {@link CerebrasLlmClient} converts it, nobody else parses it
  */
 public record ToolSpec(String name, String description, Map<String, Object> parameters) {
 
@@ -25,7 +25,7 @@ public record ToolSpec(String name, String description, Map<String, Object> para
     /**
      * The whole offered set, in the shape it goes on the wire, <em>for counting only</em>.
      * <p>
-     * This string is never sent. {@link GroqLlmClient} builds the real array with Jackson; this is
+     * This string is never sent. {@link CerebrasLlmClient} builds the real array with Jackson; this is
      * a second rendering that exists so {@code ContextPlanner} can price the tools without either
      * parsing JSON itself or reaching into the HTTP client. A tool costs hundreds of tokens and
      * the estimator counted it as zero, which is how a pre-flight check waves through a prompt ten

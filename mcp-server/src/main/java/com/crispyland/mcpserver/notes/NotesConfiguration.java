@@ -13,13 +13,13 @@ public class NotesConfiguration {
 
     @Bean
     public NotesSummarizer notesSummarizer(ObjectMapper mapper, NotesProperties properties) {
-        NotesProperties.Groq groq = properties.groq();
-        if (!groq.hasKey()) {
+        NotesProperties.Cerebras cerebras = properties.cerebras();
+        if (!cerebras.hasKey()) {
             return NotesSummarizer.NONE;
         }
         JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory();
-        requestFactory.setReadTimeout(groq.timeout());
+        requestFactory.setReadTimeout(cerebras.timeout());
         RestClient restClient = RestClient.builder().requestFactory(requestFactory).build();
-        return new GroqNotesSummarizer(restClient, mapper, groq);
+        return new CerebrasNotesSummarizer(restClient, mapper, cerebras);
     }
 }

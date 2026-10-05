@@ -83,7 +83,7 @@ public class BriefingAdminController {
      * Synchronous on purpose: the caller pressed a button and wants to see the result, and
      * {@code collect} is {@code synchronized} so a double-click queues rather than races. It is the
      * one path that spends a model call on demand, which is also why the schedule change deliberately
-     * does not collect — otherwise every change of mind would cost a Google round trip and a Groq one.
+     * does not collect — otherwise every change of mind would cost a Google round trip and a Cerebras one.
      * <p>
      * {@code collectOnRequest} rather than {@code collect}: a human asking is also the only way to
      * fill in a sentence for a day that was already collected without one, since its figures will not

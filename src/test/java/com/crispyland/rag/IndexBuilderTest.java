@@ -31,8 +31,10 @@ class IndexBuilderTest {
         loader    = mock(DocumentLoader.class);
         store     = mock(IndexStore.class);
         props     = new RagProperties(100, 10, "./data/index",
-                new RagProperties.Search(3, 0.3f),
-                new RagProperties.Embedding(false, "no-op", 3));
+                new RagProperties.Search(10, 3, 0.3f),
+                new RagProperties.Embedding(false, "no-op", 3),
+                new RagProperties.Rerank(false, "gpt-oss-120b", 5, 1000, 600),
+                new RagProperties.QueryRewrite(false, "gpt-oss-120b"));
         embedding = new NoOpEmbeddingAdapter(props);
 
         builder = new IndexBuilder(loader, new FixedSizeChunker(), new StructuredChunker(),

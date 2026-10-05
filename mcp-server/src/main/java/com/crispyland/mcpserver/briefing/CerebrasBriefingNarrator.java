@@ -14,9 +14,9 @@ import tools.jackson.databind.node.ArrayNode;
 import tools.jackson.databind.node.ObjectNode;
 
 /**
- * One Groq call, over figures that are already final.
+ * One Cerebras call, over figures that are already final.
  * <p>
- * Deliberately not a reuse of the agent's {@code GroqLlmClient}: that is a different Maven project,
+ * Deliberately not a reuse of the agent's {@code CerebrasLlmClient}: that is a different Maven project,
  * and most of its length is tool-call plumbing this has no use for. What is copied is the request
  * shape and the one decision worth copying — disable the default throw-on-error so the status and
  * body can be read rather than guessed at.
@@ -28,9 +28,9 @@ import tools.jackson.databind.node.ObjectNode;
  * types actually expected: the list of ways an HTTP client can fail is not a list worth maintaining
  * when every entry has the same answer, and an unlisted one would take the scheduled job down.
  */
-public class GroqBriefingNarrator implements BriefingNarrator {
+public class CerebrasBriefingNarrator implements BriefingNarrator {
 
-    private static final Logger log = LoggerFactory.getLogger(GroqBriefingNarrator.class);
+    private static final Logger log = LoggerFactory.getLogger(CerebrasBriefingNarrator.class);
 
     private static final DateTimeFormatter DAY = DateTimeFormatter.ofPattern("EEEE d MMMM yyyy");
 
@@ -64,7 +64,7 @@ public class GroqBriefingNarrator implements BriefingNarrator {
     private final ObjectMapper mapper;
     private final BriefingProperties.Narrator settings;
 
-    public GroqBriefingNarrator(RestClient restClient, ObjectMapper mapper,
+    public CerebrasBriefingNarrator(RestClient restClient, ObjectMapper mapper,
                                 BriefingProperties.Narrator settings) {
         this.restClient = restClient;
         this.mapper = mapper;

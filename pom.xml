@@ -107,6 +107,80 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 			</plugin>
+			<!-- Copy all project source files into classpath:docs/ for RAG indexing.
+			     Covers agent, mcp-server, and weather-server source trees so the index
+			     is always complete without hand-curating a docs/ folder. -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-resources-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>copy-agent-sources</id>
+						<phase>generate-resources</phase>
+						<goals><goal>copy-resources</goal></goals>
+						<configuration>
+							<outputDirectory>${project.build.outputDirectory}/docs</outputDirectory>
+							<resources>
+								<resource>
+									<directory>src/main/java</directory>
+									<includes>
+										<include>**/*.java</include>
+									</includes>
+								</resource>
+								<resource>
+									<directory>src/main/resources</directory>
+									<includes>
+										<include>application.yml</include>
+										<include>application-*.yml</include>
+									</includes>
+									<excludes>
+										<exclude>docs/**</exclude>
+									</excludes>
+								</resource>
+							</resources>
+						</configuration>
+					</execution>
+					<execution>
+						<id>copy-mcp-sources</id>
+						<phase>generate-resources</phase>
+						<goals><goal>copy-resources</goal></goals>
+						<configuration>
+							<outputDirectory>${project.build.outputDirectory}/docs/mcp-server</outputDirectory>
+							<resources>
+								<resource>
+									<directory>mcp-server/src/main/java</directory>
+									<includes>
+										<include>**/*.java</include>
+									</includes>
+								</resource>
+								<resource>
+									<directory>mcp-server/src/main/resources</directory>
+									<includes>
+										<include>application.yml</include>
+										<include>application-*.yml</include>
+									</includes>
+								</resource>
+							</resources>
+						</configuration>
+					</execution>
+					<execution>
+						<id>copy-weather-sources</id>
+						<phase>generate-resources</phase>
+						<goals><goal>copy-resources</goal></goals>
+						<configuration>
+							<outputDirectory>${project.build.outputDirectory}/docs/weather-server</outputDirectory>
+							<resources>
+								<resource>
+									<directory>weather-server/src/main/java</directory>
+									<includes>
+										<include>**/*.java</include>
+									</includes>
+								</resource>
+							</resources>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 		</plugins>
 	</build>
 

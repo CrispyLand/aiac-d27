@@ -15,13 +15,13 @@ import tools.jackson.databind.json.JsonMapper;
 
 class NotesSummarizerTest {
 
-    private static final String ENDPOINT = "https://api.groq.com/openai/v1/chat/completions";
+    private static final String ENDPOINT = "https://api.cerebras.ai/v1/chat/completions";
 
-    private record Fixture(GroqNotesSummarizer summarizer, MockRestServiceServer server) {
+    private record Fixture(CerebrasNotesSummarizer summarizer, MockRestServiceServer server) {
     }
 
-    private static NotesProperties.Groq settings(String apiKey) {
-        return new NotesProperties.Groq(apiKey, ENDPOINT, "gpt-oss-120b", 1000, 0.5,
+    private static NotesProperties.Cerebras settings(String apiKey) {
+        return new NotesProperties.Cerebras(apiKey, ENDPOINT, "gpt-oss-120b", 1000, 0.5,
                 Duration.ofSeconds(30), "low");
     }
 
@@ -29,7 +29,7 @@ class NotesSummarizerTest {
         RestClient.Builder builder = RestClient.builder();
         MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
         return new Fixture(
-                new GroqNotesSummarizer(builder.build(), JsonMapper.builder().build(),
+                new CerebrasNotesSummarizer(builder.build(), JsonMapper.builder().build(),
                         settings(apiKey)),
                 server);
     }

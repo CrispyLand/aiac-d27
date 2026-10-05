@@ -10,7 +10,7 @@ import java.util.Map;
  *                  the wrong question
  * @param arguments what the model filled the schema in with, already parsed. Arrives from the
  *                  provider as a JSON <em>string</em> and is turned into this map by
- *                  {@link GroqLlmClient}, so that the layer which executes tools never has to
+ *                  {@link CerebrasLlmClient}, so that the layer which executes tools never has to
  *                  parse anything — and so that a model emitting malformed JSON is caught at the
  *                  boundary rather than three classes further in
  */

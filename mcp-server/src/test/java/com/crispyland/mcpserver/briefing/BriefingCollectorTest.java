@@ -126,7 +126,7 @@ class BriefingCollectorTest {
     void aNarratorThatThrowsStillLeavesTheFiguresStored() {
         BriefingRun run = collector(briefing -> {
             narrations.incrementAndGet();
-            throw new IllegalStateException("groq is having a day");
+            throw new IllegalStateException("cerebras is having a day");
         }).collect(DAY);
 
         assertThat(narrations).hasValue(1);

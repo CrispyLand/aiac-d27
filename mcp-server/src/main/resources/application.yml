@@ -101,7 +101,7 @@ notes:
   # path under systemd via NOTES_DIRECTORY.
   directory: ${NOTES_DIRECTORY:./notes}
 
-  groq:
+  cerebras:
     # Reuses the same key as the briefing narrator.
     api-key: ${CEREBRAS_API_KEY:}
     endpoint: https://api.cerebras.ai/v1/chat/completions

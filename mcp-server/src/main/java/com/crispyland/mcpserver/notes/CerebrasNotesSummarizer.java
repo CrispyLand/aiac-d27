@@ -12,15 +12,15 @@ import tools.jackson.databind.node.ArrayNode;
 import tools.jackson.databind.node.ObjectNode;
 
 /**
- * A general-purpose Groq call: text in, processed text out.
+ * A general-purpose Cerebras call: text in, processed text out.
  * <p>
- * Same failure contract as {@code GroqBriefingNarrator}: returns {@code ""} rather than throwing.
+ * Same failure contract as {@code CerebrasBriefingNarrator}: returns {@code ""} rather than throwing.
  * The tool layer turns an empty result into an explicit error message so the model knows the step
  * failed rather than succeeded with no output.
  */
-public class GroqNotesSummarizer implements NotesSummarizer {
+public class CerebrasNotesSummarizer implements NotesSummarizer {
 
-    private static final Logger log = LoggerFactory.getLogger(GroqNotesSummarizer.class);
+    private static final Logger log = LoggerFactory.getLogger(CerebrasNotesSummarizer.class);
 
     private static final String SYSTEM = """
             You are a helpful assistant. Process the provided text according to the instructions \
@@ -32,10 +32,10 @@ public class GroqNotesSummarizer implements NotesSummarizer {
 
     private final RestClient restClient;
     private final ObjectMapper mapper;
-    private final NotesProperties.Groq settings;
+    private final NotesProperties.Cerebras settings;
 
-    public GroqNotesSummarizer(RestClient restClient, ObjectMapper mapper,
-                               NotesProperties.Groq settings) {
+    public CerebrasNotesSummarizer(RestClient restClient, ObjectMapper mapper,
+                               NotesProperties.Cerebras settings) {
         this.restClient = restClient;
         this.mapper = mapper;
         this.settings = settings;

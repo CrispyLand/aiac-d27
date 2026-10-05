@@ -3,7 +3,7 @@ package com.crispyland.agent;
 import com.crispyland.briefing.BriefingClient;
 import com.crispyland.agent.judge.Judge;
 import com.crispyland.agent.judge.NoOpJudge;
-import com.crispyland.agent.llm.GroqLlmClient;
+import com.crispyland.agent.llm.CerebrasLlmClient;
 import com.crispyland.agent.llm.LlmClient;
 import com.crispyland.agent.memory.BranchStore;
 import com.crispyland.agent.memory.ConversationStore;
@@ -53,7 +53,7 @@ public class AgentConfiguration {
         requestFactory.setReadTimeout(properties.readTimeout());
         RestClient restClient = RestClient.builder().requestFactory(requestFactory).build();
         ObjectMapper mapper = JsonMapper.builder().build();
-        return new GroqLlmClient(restClient, mapper, properties.endpoint(), properties.apiKey());
+        return new CerebrasLlmClient(restClient, mapper, properties.endpoint(), properties.apiKey());
     }
 
     /**

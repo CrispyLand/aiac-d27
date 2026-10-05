@@ -18,10 +18,10 @@ import org.springframework.boot.test.context.SpringBootTest;
  * output, so no amount of unit testing settles it — this asks the actual provider and prints both
  * answers next to each other.
  * <p>
- * Skipped unless {@code GROQ_API_KEY} is set, so it costs nothing in an ordinary build and nothing
+ * Skipped unless {@code CEREBRAS_API_KEY} is set, so it costs nothing in an ordinary build and nothing
  * in CI. Run it on purpose:
  * <pre>
- * GROQ_API_KEY=... mvn -o test -Dtest=PersonalizationLiveVerification
+ * CEREBRAS_API_KEY=... mvn -o test -Dtest=PersonalizationLiveVerification
  * </pre>
  * <p>
  * Every prompt gets a fresh conversation id. Sharing one would let the first answer's phrasing
@@ -31,7 +31,7 @@ import org.springframework.boot.test.context.SpringBootTest;
  * behind in {@code ./data}.
  */
 @SpringBootTest(properties = "agent.memory.store=memory")
-@EnabledIfEnvironmentVariable(named = "GROQ_API_KEY", matches = ".+")
+@EnabledIfEnvironmentVariable(named = "CEREBRAS_API_KEY", matches = ".+")
 class PersonalizationLiveVerification {
 
     /**

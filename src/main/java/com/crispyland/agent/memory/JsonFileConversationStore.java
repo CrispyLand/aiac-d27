@@ -25,7 +25,7 @@ import tools.jackson.databind.node.ObjectNode;
  * Keeps the message stack on disk so a restart does not erase the dialogue. The file is read
  * once at construction and written through on every mutation; reads are served from memory.
  * <p>
- * The on-disk shape is mapped by hand, exactly as {@code GroqLlmClient} maps the wire format:
+ * The on-disk shape is mapped by hand, exactly as {@code CerebrasLlmClient} maps the wire format:
  * {@link Message} and {@link MessageStats} stay pure domain records with no serialization
  * annotations, and this class owns the translation.
  */
