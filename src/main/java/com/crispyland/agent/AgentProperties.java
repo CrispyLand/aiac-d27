@@ -28,7 +28,8 @@ public record AgentProperties(
         LongTerm longTerm,
         Invariants invariants,
         Personalization profiles,
-        Briefing briefing) {
+        Briefing briefing,
+        Ollama ollama) {
 
     /**
      * Where the MCP server's briefing admin API lives, for the card on the chat page.
@@ -213,5 +214,25 @@ public record AgentProperties(
                               String model,
                               int maxSummaryTokens,
                               String reasoningEffort) {
+    }
+
+    /**
+     * Local LLM via Ollama's OpenAI-compatible endpoint.
+     *
+     * @param enabled     whether Ollama is available as a provider choice
+     * @param endpoint    the OpenAI-compatible completions URL
+     * @param model       which model to use (must be pulled on the Ollama host)
+     * @param readTimeout how long to wait — local models on small hardware can be slow
+     */
+    public record Ollama(boolean enabled, String endpoint, String model, Duration readTimeout) {
+
+        public Ollama {
+            if (endpoint == null || endpoint.isBlank())
+                endpoint = "http://localhost:11434/v1/chat/completions";
+            if (model == null || model.isBlank())
+                model = "qwen2.5:0.5b";
+            if (readTimeout == null)
+                readTimeout = Duration.ofSeconds(120);
+        }
     }
 }

@@ -231,6 +231,15 @@
                  padding: 5px 12px; font-size: 12px; font-weight: 600; color: var(--muted); }
         .pchip:hover { background: #334155; color: var(--ink); }
         .pchip.on { background: #431407; border-color: #ea580c; color: #fb923c; cursor: default; }
+        /* LLM provider toggle — same row style as persona. */
+        .provider-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+                        margin: -4px 0 14px; font-size: 12px; color: var(--muted); }
+        .provider-bar .pchip.active { background: #1e3a5f; border-color: #3b82f6; color: #60a5fa; }
+        .provider-bar .pbadge {
+            display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 8px;
+            border-radius: 999px; text-transform: uppercase; letter-spacing: .04em; }
+        .provider-bar .pbadge.cloud { background: #1e3a5f; color: #60a5fa; border: 1px solid #3b82f6; }
+        .provider-bar .pbadge.local { background: #064e3b; color: #6ee7b7; border: 1px solid #059669; }
         .persona .why { font-style: italic; opacity: .85; }
         .lenspick { border: 1px solid var(--line); border-radius: 7px; padding: 5px 9px;
                     font-size: 12px; background: #0f172a; color: var(--ink); }
@@ -466,7 +475,21 @@
 <body>
 <div class="wrap">
     <h1>Agent Chat</h1>
-    <div class="sub">Spring Boot &rarr; <code>com.crispyland.agent</code> &rarr; Cerebras chat completions</div>
+    <div class="sub">Spring Boot &rarr; <code>com.crispyland.agent</code> &rarr;
+        <span th:if="${llmSwitchable}" th:text="${llmProvider.label()} + ' (' + ${llmProvider.badge()} + ')'">Cerebras (cloud)</span>
+        <span th:unless="${llmSwitchable}">Cerebras chat completions</span>
+    </div>
+
+    <!-- LLM provider toggle — only shown when Ollama is wired up. -->
+    <div class="provider-bar" th:if="${llmSwitchable}">
+        <b>LLM</b> ·
+        <span class="pbadge" th:classappend="${llmProvider.badge()}"
+              th:text="${llmProvider.label()} + ' (' + ${llmProvider.badge()} + ')'">Cerebras (cloud)</span>
+        <button type="submit" form="providerForm" name="provider" value="CEREBRAS"
+                class="pchip" th:classappend="${llmProvider.name() == 'CEREBRAS'} ? 'active' : ''">Cerebras</button>
+        <button type="submit" form="providerForm" name="provider" value="OLLAMA"
+                class="pchip" th:classappend="${llmProvider.name() == 'OLLAMA'} ? 'active' : ''">Ollama</button>
+    </div>
 
     <!-- The memory model, stated on the page rather than buried in the code. These are not modes
          to pick between — all three are live at once, and what separates them is how long each
@@ -1242,6 +1265,7 @@
     <!-- Sibling forms: HTML forbids nesting, so buttons inside the main form target these by id.
          The submitting button carries the interesting value (which branch, which message), which
          is why one form each is enough for all of them. -->
+    <form id="providerForm" method="post" action="/llm/provider"></form>
     <form id="mcpToggleForm" method="post" action="/mcp/toggle"></form>
     <form id="mcpServerToggleForm" method="post" action="/mcp/server/toggle"></form>
     <form id="ragToggleForm" method="post" action="/rag/toggle"></form>
@@ -1416,10 +1440,7 @@
 </div>
 
 <script>
-    // Keep the newest message in view — the window is fixed height, so a fresh reply
-    // would otherwise land below the fold.
     var stream = document.getElementById('stream');
-    if (stream) { stream.scrollTop = stream.scrollHeight; }
 
     // Asked, not optional-looking: a rule that stops applying is a decision, and the reason for
     // it is the part worth keeping. Cancel aborts the retire entirely rather than lifting the rule
@@ -1569,6 +1590,10 @@
             }
         });
     })();
+
+    // Auto-scroll chat to the latest message — runs AFTER the RAG formatter
+    // has rewritten the DOM, so scrollHeight reflects the final content.
+    if (stream) stream.scrollTop = stream.scrollHeight;
 </script>
 </body>
 </html>

@@ -9,6 +9,8 @@ import com.crispyland.agent.Branches;
 import com.crispyland.agent.ContextOverflowException;
 import com.crispyland.agent.StageBlockedException;
 import com.crispyland.agent.TaskPausedException;
+import com.crispyland.agent.llm.LlmClient;
+import com.crispyland.agent.llm.LlmProviderSwitch;
 import com.crispyland.agent.invariant.Check;
 import com.crispyland.agent.invariant.Invariant;
 import com.crispyland.agent.invariant.InvariantKind;
@@ -56,6 +58,7 @@ public class ChatController {
 
     private final Agent agent;
     private final AgentProperties properties;
+    private final LlmClient llmClient;
     private final ConversationIdResolver conversationIds;
     private final Branches branches;
     private final LongTermStore longTerm;
@@ -66,7 +69,7 @@ public class ChatController {
     private final RagSearcher ragSearcher;
     private final RagProperties ragProperties;
 
-    public ChatController(Agent agent, AgentProperties properties,
+    public ChatController(Agent agent, AgentProperties properties, LlmClient llmClient,
                           ConversationIdResolver conversationIds, Branches branches,
                           LongTermStore longTerm, Profiles profiles, PersonaSelector personas,
                           ActiveProfile activeProfile,
@@ -74,6 +77,7 @@ public class ChatController {
                           RagProperties ragProperties) {
         this.agent = agent;
         this.properties = properties;
+        this.llmClient = llmClient;
         this.conversationIds = conversationIds;
         this.branches = branches;
         this.longTerm = longTerm;
@@ -102,6 +106,7 @@ public class ChatController {
         addPersona(model, request, selection);
         model.addAttribute("budget", agent.budget(scope, selection.persona(), config));
         addOptions(model, config);
+        addProvider(model);
         model.addAttribute("ragEnabled", ragState.isEnabled());
         model.addAttribute("ragResult", RagSearchResult.empty(""));
         model.addAttribute("ragConfig", RagConfig.from(ragProperties));
@@ -182,6 +187,7 @@ public class ChatController {
                 effectiveInput = buildRagEmptyPrompt(form.userInput());
             }
         }
+        addProvider(model);
         model.addAttribute("ragEnabled", ragState.isEnabled());
         model.addAttribute("ragConfig", ragConfig);
 
@@ -367,6 +373,21 @@ public class ChatController {
         return "redirect:/";
     }
 
+    /**
+     * Toggles the LLM provider between Cerebras (cloud) and Ollama (local).
+     * Only meaningful when Ollama is enabled — otherwise the switch is not on the page.
+     */
+    @PostMapping("/llm/provider")
+    public String switchProvider(@RequestParam(required = false) String provider) {
+        if (llmClient instanceof LlmProviderSwitch switcher) {
+            LlmProviderSwitch.Provider target = "OLLAMA".equalsIgnoreCase(provider)
+                    ? LlmProviderSwitch.Provider.OLLAMA
+                    : LlmProviderSwitch.Provider.CEREBRAS;
+            switcher.switchTo(target);
+        }
+        return "redirect:/";
+    }
+
     /** Who is asking and which of their branches is open — resolved once per request. */
     private MemoryScope scope(HttpServletRequest request, HttpServletResponse response) {
         // Resolving here also mints the cookie for a first-time visitor, before they send anything.
@@ -548,9 +569,25 @@ public class ChatController {
                 .filter(term -> !term.isEmpty()).toList();
     }
 
+    /** Provider state for the toggle on the page. */
+    private void addProvider(Model model) {
+        if (llmClient instanceof LlmProviderSwitch switcher) {
+            model.addAttribute("llmSwitchable", true);
+            model.addAttribute("llmProvider", switcher.activeProvider());
+        } else {
+            model.addAttribute("llmSwitchable", false);
+            model.addAttribute("llmProvider", null);
+        }
+    }
+
     /** Dropdown contents come from application.yml, not from the template. */
     private void addOptions(Model model, AgentConfig config) {
-        model.addAttribute("models", properties.availableModels());
+        if (llmClient instanceof LlmProviderSwitch switcher
+                && switcher.activeProvider() == LlmProviderSwitch.Provider.OLLAMA) {
+            model.addAttribute("models", List.of(properties.ollama().model()));
+        } else {
+            model.addAttribute("models", properties.availableModels());
+        }
         model.addAttribute("reasoningEfforts", properties.reasoningEfforts());
         model.addAttribute("layers", MemoryLayer.values());
         model.addAttribute("longTermKinds", LongTermKind.values());

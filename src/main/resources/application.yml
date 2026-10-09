@@ -1,6 +1,10 @@
 spring:
   application:
     name: agent-chat
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
   thymeleaf:
     cache: false
 
@@ -277,6 +281,18 @@ agent:
 
     # Cerebras does not support reasoning_effort — always omit.
     reasoning-effort: ""
+
+  # LOCAL LLM — Ollama's OpenAI-compatible endpoint at /v1/chat/completions.
+  #
+  # When enabled the page shows a provider toggle: Cerebras (cloud) vs Ollama (local).
+  # Both speak the same protocol, so the switch is just two CerebrasLlmClient instances
+  # behind a delegate. The model is overridden on every request — whatever the dropdown
+  # says is ignored while Ollama is active.
+  ollama:
+    enabled: true
+    endpoint: http://localhost:11434/v1/chat/completions
+    model: llama3.2:3b
+    read-timeout: 120s
 
 rag:
   chunk-size: 800

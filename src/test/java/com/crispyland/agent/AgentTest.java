@@ -1413,7 +1413,8 @@ class AgentTest {
                 new AgentProperties.Personalization(""),
                 // Nothing in a turn touches the briefing card, which is the point of it being a
                 // separate panel — defaults are enough here.
-                new AgentProperties.Briefing(null, null, null));
+                new AgentProperties.Briefing(null, null, null),
+                null);
     }
 
     /**

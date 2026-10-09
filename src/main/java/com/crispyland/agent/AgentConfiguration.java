@@ -5,6 +5,7 @@ import com.crispyland.agent.judge.Judge;
 import com.crispyland.agent.judge.NoOpJudge;
 import com.crispyland.agent.llm.CerebrasLlmClient;
 import com.crispyland.agent.llm.LlmClient;
+import com.crispyland.agent.llm.LlmProviderSwitch;
 import com.crispyland.agent.memory.BranchStore;
 import com.crispyland.agent.memory.ConversationStore;
 import com.crispyland.agent.memory.MemoryExtractor;
@@ -49,11 +50,27 @@ public class AgentConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public LlmClient llmClient(AgentProperties properties) {
-        JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory();
-        requestFactory.setReadTimeout(properties.readTimeout());
-        RestClient restClient = RestClient.builder().requestFactory(requestFactory).build();
         ObjectMapper mapper = JsonMapper.builder().build();
-        return new CerebrasLlmClient(restClient, mapper, properties.endpoint(), properties.apiKey());
+
+        // Cerebras client (cloud)
+        JdkClientHttpRequestFactory cerebrasFactory = new JdkClientHttpRequestFactory();
+        cerebrasFactory.setReadTimeout(properties.readTimeout());
+        RestClient cerebrasRest = RestClient.builder().requestFactory(cerebrasFactory).build();
+        CerebrasLlmClient cerebrasClient = new CerebrasLlmClient(
+                cerebrasRest, mapper, properties.endpoint(), properties.apiKey());
+
+        // If Ollama is enabled, wrap both in a provider switch
+        AgentProperties.Ollama ollama = properties.ollama();
+        if (ollama != null && ollama.enabled()) {
+            JdkClientHttpRequestFactory ollamaFactory = new JdkClientHttpRequestFactory();
+            ollamaFactory.setReadTimeout(ollama.readTimeout());
+            RestClient ollamaRest = RestClient.builder().requestFactory(ollamaFactory).build();
+            CerebrasLlmClient ollamaClient = new CerebrasLlmClient(
+                    ollamaRest, mapper, ollama.endpoint(), "ollama");
+            return new LlmProviderSwitch(cerebrasClient, ollamaClient, ollama.model());
+        }
+
+        return cerebrasClient;
     }
 
     /**
